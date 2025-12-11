@@ -30,3 +30,5 @@ target_link_libraries(sfmlproject
         SFML::Window
         SFML::System
 )
+
+file(COPY assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
