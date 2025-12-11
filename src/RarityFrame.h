@@ -1,7 +1,7 @@
 //
 // Created by lazab on 12/10/2025.
 //
-
+/*
 #ifndef SFMLPROJECT_RARITYFRAME_H
 #define SFMLPROJECT_RARITYFRAME_H
 #include <SFML/Graphics.hpp>
@@ -34,4 +34,4 @@ public:
     }
 };
 
-#endif //SFMLPROJECT_RARITYFRAME_H
+#endif //SFMLPROJECT_RARITYFRAME_H*/

@@ -18,6 +18,8 @@ public:
     virtual ~Ability() = default;
 };
 
+
+
 class Card {
 private:
     int hp;
@@ -37,6 +39,10 @@ private:
     sf::Sprite rarityFrameSprite;
 
     std::vector<std::shared_ptr<Ability>> abilities;
+
+
+
+
 
 
 public:
@@ -61,6 +67,9 @@ public:
         texture = &tex;       // čuvamo adresu texture
         sprite.setTexture(tex);
     }
+
+
+
 
     void addAbility(std::shared_ptr<Ability> ability) { abilities.push_back(ability); }
 

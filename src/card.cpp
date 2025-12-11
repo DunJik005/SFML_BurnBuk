@@ -2,9 +2,34 @@
 #include "card.h"
 #include <iostream>
 
+
+
+sf::Texture& getNeutralTexture() {
+    static sf::Texture neutralTexture;
+    static bool initialized = false;
+
+    if (!initialized) {
+        if (!neutralTexture.loadFromFile("assets/neutral.png")) {
+            std::cerr << "Greska pri ucitavanju neutralne teksture!" << std::endl;
+        }
+        initialized = true;
+    }
+
+    return neutralTexture;
+}
+
+
+
+
+
+
+
+
 Card::Card(sf::Texture &tex, int hp, int dmg, int cost,
            Rarity rarity, AttackType attackType,
-           const std::string &description) : sprite(), rarityFrameSprite() {
+           const std::string &description) : sprite(getNeutralTexture()), rarityFrameSprite(getNeutralTexture())
+{
+
     // postavljanje vrednosti
     this->hp = hp;
     this->dmg = dmg;

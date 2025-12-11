@@ -71,10 +71,8 @@ int main() {
 
         window.clear(Color::White);
         board.draw(window);
-        window.draw(testCard.getSprite());
-
+        //window.draw(testCard.getSprite());
         window.display();
     }
-
     return 0;
 }
