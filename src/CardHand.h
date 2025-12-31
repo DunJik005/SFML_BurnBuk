@@ -21,7 +21,7 @@ public:
 
 
 
-/*
+
     static sf::Texture& getCardBackTexture() {
         static sf::Texture back;
         static bool loaded = false;
@@ -33,7 +33,7 @@ public:
             loaded = true;
         }
         return back;
-    }*/
+    }
 };
 
 

@@ -31,18 +31,18 @@ public:
     void draw(sf::RenderWindow& window,
               const std::shared_ptr<CardHand>& selected = nullptr);
 
-/* KOD ZA DRUGI HAND GORE NAOPAK
+// KOD ZA DRUGI HAND GORE NAOPAK
     void setActive(bool value) { isActive = value; }
-*/
+
 
 private:
 
     Owner visibleOwner = Owner::Player1;
-/*
+
     // dodato za dupli hand i obrnut
     bool isActive = true;
-    bool drawOnTop = false;
-*/
+    //bool drawOnTop = false;
+
     std::vector<std::shared_ptr<CardHand>> cards;
 
     float baseY = 0.f;

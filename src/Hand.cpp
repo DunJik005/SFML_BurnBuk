@@ -7,7 +7,13 @@ void Hand::onResize(float windowWidth, float windowHeight) {
 
 
     /* OVDE CE DA SE MENJA BASEY PO ACTIVEU */
-    baseY = windowHeight - windowWidth / 8.f;
+    float margin = windowHeight / 8.f;
+
+if (isActive)
+    baseY = windowHeight - margin;
+else
+    baseY = margin;
+
 
     spacing = windowWidth * 0.15f;
 
@@ -91,19 +97,22 @@ void Hand::draw(sf::RenderWindow& window,
 
         c->resetVisuals();
 
-/*        HAND DRUGI NAOPAK
+        //HAND DRUGI NAOPAK
         if (!isActive) {
             c->getSprite().setTexture(CardHand::getCardBackTexture(), true);
             c->getSprite().setRotation(sf::degrees(180.f));
             c->draw(window);
             continue;
         }
-        else {
-            // VRATI FRONT
-            c->getSprite().setTexture(c->getFrontTexture(), true);
-            c->getSprite().setRotation(sf::degrees(0.f));
+
+        // AKTIVAN HAND → VRATI FRONT
+        if (const sf::Texture* front = c->getTexture()) {
+            c->getSprite().setTexture(*front, true);
         }
-*/
+
+        c->getSprite().setRotation(sf::degrees(0.f));
+
+
         float y = baseY;
 
         if (c == selected)

@@ -78,11 +78,22 @@ int main() {
 
 
         Hand* activeHand = nullptr;
+        Hand* inactiveHand = nullptr;
 
         switch (gameController.getCurrentPlayer()) {
-            case Owner::Player1: activeHand = &p1Hand; break;
-            case Owner::Player2: activeHand = &p2Hand; break;
+            case Owner::Player1:
+                activeHand   = &p1Hand;
+                inactiveHand = &p2Hand;
+                break;
+
+            case Owner::Player2:
+                activeHand   = &p2Hand;
+                inactiveHand = &p1Hand;
+                break;
         }
+        activeHand->setActive(true);
+        inactiveHand->setActive(false);
+
 
         activeHand->setVisibleOwner(gameController.getCurrentPlayer());
 
@@ -272,6 +283,7 @@ int main() {
         window.clear(Color::White);
         board.draw(window);
         board.drawBoardCards(window, selectedBoardCard);
+        inactiveHand->draw(window, nullptr);   // nema selekcije
         activeHand->draw(window, selectedCard);
         gameDeck.draw(window);
 
