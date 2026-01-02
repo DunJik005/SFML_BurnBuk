@@ -39,6 +39,8 @@ private:
     bool faceUp;
     AttackType attackType;
     std::string description;
+    int cooldown = 0;
+    int stunned = 0;
     Owner owner;
 
 
@@ -74,6 +76,8 @@ public:
     void setPosition(float x, float y) { sprite.setPosition({x, y}); }
     void setOwner(Owner o){ owner = o;}
     void setName(std::string n){ name = n;}
+    void setCooldown(int cd){ cooldown = cd;}
+    void setStunDuration(int stun){ stunned  = stun;}
 
     // dodata metoda za setSpritePosition, mozda bude mogo i obican setPosition
     void setSpritePosition(float x, float y) { sprite.setPosition({x, y}); }
@@ -113,6 +117,8 @@ public:
     const sf::Texture* getTexture() const { return texture; }
     Owner getOwner() const{return owner;}
     std::string getName()const{return name;}
+    int getCooldown() const{ return cooldown;}
+    int getStunDuration() const{return stunned;}
 
 
     static sf::Texture& getRarityFrame(Rarity r);

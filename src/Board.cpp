@@ -205,6 +205,8 @@ bool Board::placeCardAt(int tileIndex, std::shared_ptr<CardBoard> card)
  << "\n";
 
 
+
+
     if (tileIndex < 0 || tileIndex >= (int)boardCards.size())
         return false;
     if (boardCards[tileIndex])
@@ -215,9 +217,19 @@ bool Board::placeCardAt(int tileIndex, std::shared_ptr<CardBoard> card)
 
     bool isLeech = card->getAttackType() == AttackType::Pijavica || card->getAttackType() == AttackType::Pijavica_Special;
 
-    if (!isLeech && tileOwner != cardOwner) {
-        std::cout << "Ne mozes staviti kartu na protivnicko polje!\n";
-        return false;
+    bool isJelepeno = card->getAttackType() == AttackType::Jelepeno;
+
+
+    if (!isJelepeno)
+    {
+        if (!isLeech && tileOwner != cardOwner) {
+            std::cout << "Ne mozes staviti kartu na protivnicko polje!\n";
+            return false;
+        }
+        if (isLeech && tileOwner == cardOwner) {
+            std::cout << "Ne mozes da stavis pijavicu na svoje tile-ove.\n";
+            return false;
+        }
     }
 
     card->tileIndex = tileIndex;

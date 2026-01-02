@@ -29,6 +29,9 @@ private:
     sf::Texture hrkTex;
     sf::Texture jajaTex;
     sf::Texture dzarkaTex;
+    sf::Texture tijanaTex;
+    sf::Texture grbaviTex;
+    sf::Texture kepecTex;
     std::vector<std::shared_ptr<Card>> allCards;
     std::vector<std::shared_ptr<sf::Texture>> allTextures; // čuvamo životni vek
     std::mt19937 rng{std::random_device{}()}; // jedan rng za celu bazu
@@ -61,6 +64,21 @@ private:
             std::cerr << "Greska pri ucitavanju ivane!\n";
         }
         allCards.push_back(std::make_shared<Card>("Ivana Dzarka",dzarkaTex, 0, 3, 1, Rarity::Rare, AttackType::Jelepeno));
+        if (!tijanaTex.loadFromFile("assets/cards/gladijator.jpg"))
+        {
+            std::cerr << "Greska pri ucitavanju tijane!\n";
+        }
+        allCards.push_back(std::make_shared<Card>("Tijana Gladijator", tijanaTex,5,5,0, Rarity::Common, AttackType::Chomper));
+        if (!grbaviTex.loadFromFile("assets/cards/grbavi.jpg"))
+        {
+            std::cerr << "Greska pri ucitavanju mine!\n";
+        }
+        allCards.push_back(std::make_shared<Card>("Mina Grbavi", grbaviTex,4,5,0, Rarity::Common, AttackType::Peashooter));
+        if (!kepecTex.loadFromFile("assets/cards/miloskepec.jpg"))
+        {
+            std::cerr << "Greska pri ucitavanju tijane!\n";
+        }
+        allCards.push_back(std::make_shared<Card>("Milos Kepec", kepecTex,7,0,0, Rarity::Common, AttackType::Pijavica));
     }
 };
 
