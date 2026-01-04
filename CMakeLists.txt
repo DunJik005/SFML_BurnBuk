@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.31)
 project(sfmlproject)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(sfmlproject
         src/main.cpp
@@ -42,14 +43,11 @@ add_executable(sfmlproject
         src/TurnButtons.cpp
         src/TurnButtons.h
         src/CardDataBase.cpp
-        src/CardDataBase.h)
+        src/CardDataBase.h
+        src/CardRender.cpp
+        src/CardRender.h)
 
-set(SFML_STATIC_LIBRARIES TRUE)
-set(SFML_DIR C:/SFML/lib/cmake/SFML)
-
-include_directories(C:/SFML)
-
-find_package(SFML 3 COMPONENTS Graphics Window System REQUIRED)
+find_package(SFML 3 REQUIRED COMPONENTS Graphics Window System)
 
 target_link_libraries(sfmlproject
         SFML::Graphics
