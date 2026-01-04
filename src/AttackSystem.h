@@ -16,13 +16,15 @@ private:
     static void attackPeashooter(Board& board, int index);
     static void attackNut(Board& board, int index);
     static void attackJelepeno(Board& board, int index);
+    static void linearAttack(Board& board, Card& attacker, int index);
 
 
 
 
     //smer napada
     static int getDirection(const Card& card);
-
+    static int getRange(BaseAttack base);
+    static bool hasModifier(AttackModifier mods, AttackModifier flag);
 
 };
 

@@ -20,7 +20,7 @@ int main() {
 
     RenderWindow window(
         //VideoMode({1820,1080}),
-        VideoMode({1000, 800}),
+        VideoMode({1344, 800}),
         "Tedzan uci",
         sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize
     );
@@ -201,7 +201,9 @@ int main() {
                                 selectedCard->getDamage(),
                                 selectedCard->getCost(),
                                 selectedCard->getRarity(),
-                                selectedCard->getAttackType(),
+                                selectedCard->getBaseAttack(),
+                                selectedCard->getModifiers(),
+                                selectedCard->getHitCount(),
                                 selectedCard->getDescription()
                             );
                             cb->setOwner(gameController.getCurrentPlayer());

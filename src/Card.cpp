@@ -7,7 +7,11 @@
 
 
 Card::Card(std::string name, sf::Texture &tex, int hp, int dmg, int cost,
-           Rarity rarity, AttackType attackType,
+           Rarity rarity,
+           //AttackType attackType,
+           BaseAttack base,
+           AttackModifier mods,
+           int hits,
            const std::string &description) : sprite(getNeutralTexture()), rarityFrameSprite(getNeutralTexture())
 {
 
@@ -17,9 +21,12 @@ Card::Card(std::string name, sf::Texture &tex, int hp, int dmg, int cost,
     this->dmg = dmg;
     this->cost = cost;
     this->rarity = rarity;
-    this->attackType = attackType;
+    //this->attackType = attackType;
+    this->baseAttack = base;
+    this->modifiers = mods;
     this->description = description;
     this->faceUp = true;
+    this->hitCount = hits;
 
     // glavni art
     this->texture = &tex;

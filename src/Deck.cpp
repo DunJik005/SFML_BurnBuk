@@ -48,7 +48,9 @@ bool Deck::drawCardToHand(Hand& hand, float windowWidth, float windowHeight, Own
         card->getDamage(),
         card->getCost(),
         card->getRarity(),
-        card->getAttackType(),
+        card->getBaseAttack(),
+        card->getModifiers(),
+        card->getHitCount(),
         card->getDescription()
     );
 
