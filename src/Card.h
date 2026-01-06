@@ -21,6 +21,22 @@ enum class AttackType { Chomper, Peashooter, Catapult, Special, Jelepeno, Nut, T
     Nut_Support, Event_Nut, Pijavica_Special, Zlatni_Sniper, Hemisfera, Protagonista, };
 
 
+// dodatak za mergovanje razlicitih keywordova na base napade
+enum class BaseAttack {
+    Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica
+};
+
+enum class AttackModifier : uint32_t {
+    None    = 0,
+    Laser   = 1 << 0,
+    Rapid   = 1 << 1,
+    Zlatni  = 1 << 2,
+    Reverse = 1 << 3,
+    Wide    = 1 << 4
+};
+
+
+
 class Ability {
 public:
     virtual void activate() = 0; // virtualna funkcija koju svaka ability override-uje
@@ -41,7 +57,12 @@ private:
     std::string description;
     int cooldown = 0;
     int stunned = 0;
+    int hitCount;
     Owner owner;
+
+
+    BaseAttack baseAttack;
+    AttackModifier modifiers;
 
 
 
@@ -61,12 +82,16 @@ private:
 
 
 public:
-    Card(std::string name, sf::Texture& tex, int hp = 1, int dmg = 1, int cost = 1,
+    Card(
+         std::string name, sf::Texture& tex, int hp = 1, int dmg = 1, int cost = 1,
          Rarity rarity = Rarity::Common,
-         AttackType attackType = AttackType::Chomper,
+         //AttackType attackType = AttackType::Chomper,
+         BaseAttack base = BaseAttack::Chomper,
+         AttackModifier mods = AttackModifier::None,
+         int hits = 1,
          const std::string& description = "");
 
-    // Setters
+    // SETTERS
     void setHP(int h) { hp = h; }
     void setDamage(int d) { dmg = d; }
     void setCost(int c) { cost = c; }
@@ -78,6 +103,9 @@ public:
     void setName(std::string n){ name = n;}
     void setCooldown(int cd){ cooldown = cd;}
     void setStunDuration(int stun){ stunned  = stun;}
+    void setBaseAttack(BaseAttack b) { baseAttack = b; }
+    void setModifiers(AttackModifier m) { modifiers = m; }
+    void setHitCount(int c) { hitCount = c; }
 
     // dodata metoda za setSpritePosition, mozda bude mogo i obican setPosition
     void setSpritePosition(float x, float y) { sprite.setPosition({x, y}); }
@@ -103,7 +131,7 @@ public:
 
 
 
-
+// GETTERS
     int getHP() const { return hp; }
     int getDamage() const { return dmg; }
     int getCost() const { return cost; }
@@ -119,6 +147,9 @@ public:
     std::string getName()const{return name;}
     int getCooldown() const{ return cooldown;}
     int getStunDuration() const{return stunned;}
+    BaseAttack getBaseAttack() const { return baseAttack; }
+    AttackModifier getModifiers() const { return modifiers; }
+    int getHitCount() const{ return hitCount; }
 
 
     static sf::Texture& getRarityFrame(Rarity r);
