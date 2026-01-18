@@ -104,7 +104,7 @@ private:
         {
             std::cerr << "Greska pri ucitavanju nosferatua!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Djole Nosferatu", nosferatuTex, 13, 4, 0, Rarity::Epic, BaseAttack::Peashooter, AttackModifier::Reverse));
+        allCards.push_back(std::make_shared<Card>("Djole Nosferatu", nosferatuTex, 13, 4, 5, Rarity::Epic, BaseAttack::Peashooter, AttackModifier::Reverse));
         if (!rtdsefTex.loadFromFile("assets/cards/rtdsef.jpg"))
         {
             std::cerr << "Greska pri ucitavanju rtd sefa!\n";

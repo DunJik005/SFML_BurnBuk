@@ -35,9 +35,14 @@ bool Deck::contains(float x, float y) {
 }
 
 bool Deck::drawCardToHand(Hand& hand, float windowWidth, float windowHeight, Owner owner) {
-    if (cards.empty()) return false;
+    if (cards.empty())
+        return false;
 
-    int idx = rand() % cards.size();
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, cards.size() - 1);
+
+    int idx = dist(gen);  // random indeks
     auto card = cards[idx];
     cards.erase(cards.begin() + idx);
 
@@ -54,13 +59,7 @@ bool Deck::drawCardToHand(Hand& hand, float windowWidth, float windowHeight, Own
         card->getDescription()
     );
 
-    // Postavi owner odmah
     handCard->setOwner(owner);
-
-    std::cout << "[DEBUG] owner="
-          << (handCard->getOwner() == Owner::Player1 ? "Player1" : "Player2")
-          << "\n";
-
     hand.addCard(handCard, windowWidth, windowHeight);
     return true;
 }

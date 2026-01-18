@@ -15,8 +15,8 @@
 
 using namespace sf;
 
-
 int main() {
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
 
     RenderWindow window(
         //VideoMode({1820,1080}),
@@ -211,15 +211,32 @@ int main() {
 
 
                             //  postavljanje karte na board
+                            Player& currentPlayer =
+                            (gameController.getCurrentPlayer() == Owner::Player1) ? player1 : player2;
+                            int cost = selectedCard->getCost();
+
+                            // 1. PROVERA ELIKSIRA
+                            if (!currentPlayer.spendElixir(cost)) {
+                                std::cout << "Nemas dovoljno eliksira! Cost = "
+                                          << cost << ", imas = "
+                                          << currentPlayer.getElixir() << "\n";
+                                continue;
+                            }
+
+                            // 2. POKUSAJ POSTAVLJANJA
                             bool ok = board.placeCardAt(tile, cb);
+
                             if (ok) {
                                 activeHand->removeHand(selectedCard, window.getSize().x);
-                                //cardView.show(*cb);
                                 selectedCard = nullptr;
-                                std::cout << "Postavio si kartu na board:" << cb->getName() << std::endl;
+                                std::cout << "Postavio si kartu na board: " << cb->getName() << "\n";
                             }
-                            else
-                                std::cout << "Tile vec na sebi ima kartu\n";
+                            else {
+                                // 3. VRATI ELIXIR AKO TILE NIJE VALIDAN
+                                currentPlayer.addElixir(cost);
+                                std::cout << "Tile zauzet – eliksir vracen\n";
+                            }
+
 
                             continue;
                         }

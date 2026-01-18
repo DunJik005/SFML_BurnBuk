@@ -44,7 +44,9 @@ add_executable(sfmlproject
         src/CardDataBase.cpp
         src/CardDataBase.h
         src/CardRender.cpp
-        src/CardRender.h)
+        src/CardRender.h
+        src/Tile.cpp
+        src/Tile.h)
 
 set(SFML_STATIC_LIBRARIES TRUE)
 set(SFML_DIR C:/SFML/lib/cmake/SFML)
