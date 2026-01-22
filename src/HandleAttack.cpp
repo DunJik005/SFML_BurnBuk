@@ -1,38 +1,43 @@
 #include "HandleAttack.h"
 
-const std::vector<std::pair<int,int>>HandleAttack::attackPairs = {
-    {7, 11},
-    {3, 15},
-    {6, 10},
-    {2, 14},
-    {5, 9},
-    {1, 13},
-    {4, 8},
-    {0, 12}
+
+// PRIORITET AKTIVACIJE REDOVA (od najvišeg ka najnižem)
+const std::vector<int> attackRows = {
+    4, // srednji red (ako je aktivan)
+    3, // Player1 front
+    5, // Player2 front
+    2, // Player1 middle (default inactive)
+    6, // Player2 middle (default inactive)
+    1, // Player1 back
+    7, // Player2 back
+    0, // Player1 back-back
+    8  // Player2 back-back
 };
 
-void HandleAttack::executeAttacks() {
-    for (const auto& [a, b] : attackPairs) {
 
-        auto cardA = board.getCardAt(a);
-        auto cardB = board.getCardAt(b);
+#include "HandleAttack.h"
 
-        bool aAlive = cardA && cardA->getHP() > 0;
-        bool bAlive = cardB && cardB->getHP() > 0;
+void HandleAttack::executeAttacks()
+{
+    // kolone: desno → levo
+    for (int col = Board::COLS - 1; col >= 0; --col)
+    {
+        for (int row : attackRows)
+        {
+            if (!board.isValidPosition(row, col))
+                continue;
 
-        // Oba napadaju “praktično simultano”
-        if (aAlive && bAlive) {
-            AttackSystem::resolveAttack(board, a);
-            AttackSystem::resolveAttack(board, b);
+            Tile& tile = board.getTile(row, col);
+
+            if (!tile.isActive())
+                continue;
+
+            if (tile.empty())
+                continue;
+
+            // 🔥 samo aktiviramo kartu
+            AttackSystem::resolveAttack(board, row, col);
         }
-        // Ako je samo jedna živa → napada samo ona
-        else if (aAlive) {
-            AttackSystem::resolveAttack(board, a);
-        }
-        else if (bAlive) {
-            AttackSystem::resolveAttack(board, b);
-        }
-
     }
 
     board.cleanupDeadCards();

@@ -6,53 +6,36 @@
 
 
 
-Card::Card(std::string name, sf::Texture &tex, int hp, int dmg, int cost,
+Card::Card(std::string name, sf::Texture& tex, int hp, int dmg, int cost,
            Rarity rarity,
-           //AttackType attackType,
            BaseAttack base,
            AttackModifier mods,
            int hits,
-           const std::string &description) : sprite(getNeutralTexture()), rarityFrameSprite(getNeutralTexture())
+           const std::string& description,
+           PlacementType placement)
+    : sprite(getNeutralTexture()),
+      rarityFrameSprite(getNeutralTexture()),
+      placementType(placement)
 {
-
-    // postavljanje vrednosti
     this->name = name;
     this->hp = hp;
     this->dmg = dmg;
     this->cost = cost;
     this->rarity = rarity;
-    //this->attackType = attackType;
     this->baseAttack = base;
     this->modifiers = mods;
     this->description = description;
     this->faceUp = true;
     this->hitCount = hits;
 
-    // glavni art
+    if (baseAttack == BaseAttack::Jelepeno) {
+        ignoresTileRules = true;
+    }
+
     this->texture = &tex;
-    //this->texture = std::make_shared<sf::Texture>(tex);
-    this->sprite = sf::Sprite(tex); // konstrukt sa teksturom odmah
+    this->sprite = sf::Sprite(tex);
 
-    // putanja rarity frame-a
-    /*std::string framePath;
-    switch (rarity) {
-        case Rarity::Common: framePath = "assets/frames/frame_common.png";
-            break;
-        case Rarity::Rare: framePath = "assets/frames/frame_rare.png";
-            break;
-        case Rarity::Epic: framePath = "assets/frames/frame_epic.png";
-            break;
-        case Rarity::Legendary: framePath = "assets/frames/frame_legendary.png";
-            break;
-        case Rarity::Hero: framePath = "assets/frames/frame_hero.png";
-            break;
-    }*/
-
-
-
-    // sprite sa teksturom
     rarityFrameSprite.setTexture(getRarityFrame(rarity));
-
 }
 
 
@@ -89,16 +72,14 @@ sf::Texture& Card::getRarityFrame(Rarity r)
 
 
 
-void Card::setBrightness(bool value)
+void Card::setBrightness(bool highlighted)
 {
-    if (value)
-        sprite.setColor(sf::Color::White); // puna boja
+    if (highlighted)
+        sprite.setColor(sf::Color(255, 255, 200)); // SVETLIJE
     else
-        sprite.setColor(sf::Color(120, 120, 120)); // blago potamnjeno
+        sprite.setColor(sf::Color::White);          // NORMALNO
 }
-
 void Card::resetVisuals()
 {
     sprite.setColor(sf::Color::White);
 }
-

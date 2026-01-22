@@ -13,7 +13,7 @@ private:
 
     CardRenderer renderer;
 
-    float margin = 40.f;
+    float margin = 20.f;
     float scaleFactor = 1.f;
     //float starsScaleFactor = 0.22f;
     sf::Vector2f panelPos{0.f, 0.f};
@@ -33,6 +33,9 @@ public:
     void draw(sf::RenderWindow& window) const;
 
     void onResize(float winW,float winH) override;
+    bool isVisible() const;
+    void scrollDescription(float delta);
+    void update(float dt);
 };
 
 #endif

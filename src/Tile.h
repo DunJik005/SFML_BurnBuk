@@ -7,7 +7,7 @@
 #include <list>
 #include <memory>
 #include <SFML/Graphics.hpp>
-#include "CardBoard.h"
+#include "Card.h"
 
 
 class Tile {
@@ -29,15 +29,19 @@ public:
     void setOwner(Owner o);
     Owner getOwner() const;
 
+    sf::Vector2f getPosition() const;
+    sf::Vector2f getSize() const;
+
+
     bool isActive() const;
 
     // ---------- Card stack ----------
-    bool canPlace(const std::shared_ptr<CardBoard>& card) const;
-    bool placeCard(const std::shared_ptr<CardBoard>& card);
+    bool canPlace(const std::shared_ptr<Card>& card) const;
+    bool placeCard(const std::shared_ptr<Card>& card);
 
-    std::shared_ptr<CardBoard> removeTopCard();
-    std::shared_ptr<CardBoard> topCard() const;
-    std::shared_ptr<CardBoard> bottomCard() const;
+    std::shared_ptr<Card> removeTopCard();
+    std::shared_ptr<Card> topCard() const;
+    std::shared_ptr<Card> bottomCard() const;
 
     bool empty() const;
     size_t cardCount() const;
@@ -47,12 +51,16 @@ public:
     void cleanupDeadCards();
 
     // ---------- Visual ----------
+
+    void setTexture(sf::Texture* texture);
+    void setHovered(bool h);
+
     void setPosition(float x, float y);
     void setSize(float w, float h);
     sf::FloatRect getBounds() const;
 
     void draw(sf::RenderWindow& window);
-    std::shared_ptr<CardBoard> getAttackTarget();
+    std::shared_ptr<Card> getAttackTarget();
 
 
 private:
@@ -61,14 +69,18 @@ private:
     Owner owner = Owner::None;
 
     // bottom -> front, top -> back
-    std::list<std::shared_ptr<CardBoard>> cards;
+    std::list<std::shared_ptr<Card>> cards;
 
     // ---------- Visual ----------
     sf::RectangleShape shape;
 
+    bool hovered = false;
+
+
+
 private:
     // ---------- Internal helpers ----------
-    void fitCardToTile(const std::shared_ptr<CardBoard>& card);
+    void fitCardToTile(const std::shared_ptr<Card>& card);
 };
 
 

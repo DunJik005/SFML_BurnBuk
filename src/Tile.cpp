@@ -2,7 +2,7 @@
 
 // ---------- Ctor ----------
 Tile::Tile() {
-    shape.setFillColor(sf::Color(200, 200, 220));
+    shape.setFillColor(sf::Color::White);
     shape.setOutlineThickness(2.f);
     shape.setOutlineColor(sf::Color::Black);
 }
@@ -42,12 +42,12 @@ size_t Tile::cardCount() const {
     return cards.size();
 }
 
-std::shared_ptr<CardBoard> Tile::topCard() const {
+std::shared_ptr<Card> Tile::topCard() const {
     if (cards.empty()) return nullptr;
     return cards.back();
 }
 
-std::shared_ptr<CardBoard> Tile::bottomCard() const {
+std::shared_ptr<Card> Tile::bottomCard() const {
     if (cards.empty()) return nullptr;
     return cards.front();
 }
@@ -78,7 +78,7 @@ void Tile::cleanupDeadCards()
 
 
 // ---------- Placement rules ----------
-bool Tile::canPlace(const std::shared_ptr<CardBoard>& card) const
+bool Tile::canPlace(const std::shared_ptr<Card>& card) const
 {
     if (!card) {
         std::cout << "[canPlace] FAIL: null card\n";
@@ -141,7 +141,7 @@ bool Tile::canPlace(const std::shared_ptr<CardBoard>& card) const
     return false;
 }
 
-bool Tile::placeCard(const std::shared_ptr<CardBoard>& card) {
+bool Tile::placeCard(const std::shared_ptr<Card>& card) {
     if (!canPlace(card))
         return false;
 
@@ -151,7 +151,7 @@ bool Tile::placeCard(const std::shared_ptr<CardBoard>& card) {
     return true;
 }
 
-std::shared_ptr<CardBoard> Tile::removeTopCard() {
+std::shared_ptr<Card> Tile::removeTopCard() {
     if (cards.empty()) return nullptr;
 
     auto card = cards.back();
@@ -160,6 +160,18 @@ std::shared_ptr<CardBoard> Tile::removeTopCard() {
 }
 
 // ---------- Visual ----------
+
+void Tile::setTexture(sf::Texture* texture)
+{
+    shape.setTexture(texture);
+}
+
+void Tile::setHovered(bool h)
+{
+    hovered = h;
+}
+
+
 void Tile::setPosition(float x, float y) {
     shape.setPosition({x, y});
 
@@ -174,19 +186,39 @@ void Tile::setSize(float w, float h) {
         fitCardToTile(card);
 }
 
-sf::FloatRect Tile::getBounds() const {
+sf::FloatRect Tile::getBounds() const
+{
+    if (state == State::Inactive)
+        return sf::FloatRect();
+
     return shape.getGlobalBounds();
 }
 
-void Tile::draw(sf::RenderWindow& window) {
+void Tile::draw(sf::RenderWindow& window)
+{
+    if (state == State::Inactive)
+        return;
+
+    // 1️⃣ crtaj tile normalno
     window.draw(shape);
 
-    // donja → gornja (prirodan redosled)
+    // 2️⃣ hover glow (overlay, NE fillColor)
+    if (hovered)
+    {
+        sf::RectangleShape overlay;
+        overlay.setPosition(shape.getPosition());
+        overlay.setSize(shape.getSize());
+        overlay.setFillColor(sf::Color(255, 255, 255, 40)); // lagani glow
+
+        window.draw(overlay);
+    }
+
+    // 3️⃣ crtaj karte potpuno normalno
     for (auto& card : cards)
         card->draw(window);
 }
 
-std::shared_ptr<CardBoard> Tile::getAttackTarget() {
+std::shared_ptr<Card> Tile::getAttackTarget() {
     if (cards.empty())
         return nullptr;
 
@@ -195,7 +227,7 @@ std::shared_ptr<CardBoard> Tile::getAttackTarget() {
 }
 
 // ---------- Internal ----------
-void Tile::fitCardToTile(const std::shared_ptr<CardBoard>& card) {
+void Tile::fitCardToTile(const std::shared_ptr<Card>& card) {
     if (!card) return;
 
     sf::Sprite& sprite = card->getSprite();
@@ -207,4 +239,13 @@ void Tile::fitCardToTile(const std::shared_ptr<CardBoard>& card) {
         shape.getSize().x / bounds.size.x,
         shape.getSize().y / bounds.size.y
     });
+}
+
+
+sf::Vector2f Tile::getPosition() const {
+    return shape.getPosition();
+}
+
+sf::Vector2f Tile::getSize() const {
+    return shape.getSize();
 }

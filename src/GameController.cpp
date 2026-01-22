@@ -1,7 +1,3 @@
-//
-// Created by lazab on 12/22/2025.
-//
-
 #include "GameController.h"
 
 
@@ -37,14 +33,10 @@ void GameController::sendHandCardToGraveyard(Hand &hand, Graveyard &graveyard, s
     card.reset();
 }
 
-void GameController::sendBoardCardToGraveyard(Board &board, Graveyard &graveyard, std::shared_ptr<CardBoard> &card) {
+void GameController::sendBoardCardToGraveyard(Tile& tile, Graveyard &graveyard, std::shared_ptr<Card> &card) {
     if (!card) return;
-    int tile = card->tileIndex;
-    auto removed = board.removeCardAt(tile);
-
-    if (removed)
-        graveyard.addCard(removed);
-
+    if (tile.removeTopCard())
+        graveyard.addCard(card);
     card.reset();
 
 }
@@ -52,7 +44,8 @@ void GameController::sendBoardCardToGraveyard(Board &board, Graveyard &graveyard
 
 
 Owner GameController::getCurrentPlayer() const {
-    switch (currentPhase) {
+    switch (currentPhase)
+    {
         case GamePhase::Player1Place: return Owner::Player1;
         case GamePhase::Player2Place: return Owner::Player2;
         default: return Owner::Player1; // ili None

@@ -2,39 +2,39 @@
 #define SFMLPROJECT_CARDHAND_H
 
 #include "Card.h"
-
+#include <SFML/Graphics.hpp>
 
 class CardHand : public Card {
 public:
     using Card::Card;
 
+    // ---------- Drawing ----------
+    void draw(sf::RenderWindow& window) override;
+
+    // ---------- Hit testing ----------
+    bool containsPoint(float x, float y) const;
+
+    // ---------- Size / layout ----------
+    void updateScale(float windowWidth);   // poziva Hand / onResize
+    float getWidth()  const;               // za sabijanje
+    float getHeight() const;
+
+    // ---------- Hand index ----------
+    void setHandIndex(int index);
+    int  getHandIndex() const;
+
+    // ---------- Textures ----------
+    static sf::Texture& getCardBackTexture();
+
     int handIndex = -1;
 
-    void draw(sf::RenderWindow &window) override {
-        Card::draw(window);
-    }
+private:
 
+    // ciljna širina u odnosu na ekran
+    float targetWidth = 0.f;
 
-    bool containsPoint(float x, float y) {
-        return getBounds().contains({x, y});
-    }
-
-
-
-
-    static sf::Texture& getCardBackTexture() {
-        static sf::Texture back;
-        static bool loaded = false;
-
-        if (!loaded) {
-            if (!back.loadFromFile("assets/backgroundHand.png")) {
-                std::cerr << "Greska pri ucitavanju backgroundHand.png\n";
-            }
-            loaded = true;
-        }
-        return back;
-    }
+    // helper
+    void applyScaleFromWidth(float width);
 };
 
-
-#endif //SFMLPROJECT_CARDHAND_H
+#endif // SFMLPROJECT_CARDHAND_H

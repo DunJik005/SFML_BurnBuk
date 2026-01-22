@@ -3,20 +3,29 @@
 // ---------------- INIT ----------------
 
 void Hand::onResize(float windowWidth, float windowHeight) {
+    if (cards.empty()) return;
+
+
+    /* OVDE CE DA SE MENJA BASEY PO ACTIVEU */
     float margin = windowHeight / 8.f;
 
-    // baseY zavisi od toga da li je hand aktivan
-    if (isActive)
-        baseY = windowHeight - margin; // donji deo
-    else
-        baseY = margin;                // gornji deo
+if (isActive)
+    baseY = windowHeight - margin;
+else
+    baseY = margin;
 
-    // spacing zavisi od širine prozora
+
     spacing = windowWidth * 0.15f;
 
-    recalcLayout(windowWidth); // pozicioniraj karte
-}
+    float totalWidth = (cards.size() - 1) * spacing;
 
+    float startX = (windowWidth - totalWidth) / 2.f;
+
+    for (size_t i = 0; i < cards.size(); i++) {
+        cards[i]->handIndex = static_cast<int>(i);
+        cards[i]->setSpritePosition(startX + i * spacing, baseY);
+    }
+}
 
 // ---------------- LAYOUT ----------------
 
@@ -35,6 +44,7 @@ void Hand::recalcLayout(float windowWidth)
             baseY
         );
         std::cout << "Card " << i << " pozicija: " << startX + i*spacing << ", " << baseY << "\n";
+
     }
 }
 
@@ -55,62 +65,64 @@ std::shared_ptr<CardHand> Hand::handleClick(float x, float y)
 
 // ---------------- MODIFY ----------------
 
-void Hand::addCard(const std::shared_ptr<CardHand>& card, float windowWidth, float windowHeight)
+void Hand::addCard(const std::shared_ptr<CardHand>& card,
+                   float windowWidth,
+                   float windowHeight)
 {
+    // 1. SCALE – POSLE TEKSTURE
+    card->updateScale(windowWidth);
+
+    // 2. dodaj u hand
     cards.push_back(card);
-    float margin = windowHeight / 8.f;
-    baseY = isActive ? windowHeight - margin : margin;
+
+    // 3. ispravan baseY
+    baseY = windowHeight - windowHeight / 8.f;
+
+    // 4. layout
     recalcLayout(windowWidth);
 }
+
 
 void Hand::removeHand(const std::shared_ptr<CardHand>& card, float windowWidth)
 {
-    auto it = std::find(cards.begin(), cards.end(), card);
-    if (it != cards.end())
-        cards.erase(it);
-
+    for (auto it = cards.begin(); it != cards.end(); ++it)
+    {
+        if (*it == card)
+        {
+            cards.erase(it);
+            break;
+        }
+    }
     recalcLayout(windowWidth);
 }
-
 
 // ---------------- RENDER ----------------
 
 void Hand::draw(sf::RenderWindow& window,
                 const std::shared_ptr<CardHand>& selected)
 {
-    if (cards.empty()) return;
-
-    // Za svaki draw, izračunaj baseY i spacing
-    float margin = window.getSize().y / 8.f;   // windowHeight
-    baseY = isActive ? window.getSize().y - margin : margin;
-
-    spacing = window.getSize().x * 0.15f;      // windowWidth
-    float totalWidth = (cards.size() - 1) * spacing;
-    float startX = (window.getSize().x - totalWidth) / 2.f;
-
-    for (size_t i = 0; i < cards.size(); i++)
+    for (auto& c : cards)
     {
-        auto& c = cards[i];
-        if (!c) continue;
-
-        c->handIndex = static_cast<int>(i);
+        if (!c)
+            continue;
 
         c->resetVisuals();
 
+        //HAND DRUGI NAOPAK
         if (!isActive) {
-            // PROTIVNIKOV HAND → crtamo unazad
             c->getSprite().setTexture(CardHand::getCardBackTexture(), true);
             c->getSprite().setRotation(sf::degrees(180.f));
-            c->setSpritePosition(startX + i * spacing, baseY); // **ovo je ključno**
             c->draw(window);
             continue;
         }
 
-        // AKTIVAN HAND → crtamo front
+        // AKTIVAN HAND → VRATI FRONT
         if (const sf::Texture* front = c->getTexture()) {
             c->getSprite().setTexture(*front, true);
         }
+
         c->getSprite().setRotation(sf::degrees(0.f));
+
 
         float y = baseY;
 
@@ -124,7 +136,7 @@ void Hand::draw(sf::RenderWindow& window,
             c->setBrightness(false);
         }
 
-        c->setSpritePosition(startX + i * spacing, y);  // **ovo je ključno**
+        c->setSpritePosition(c->getSprite().getPosition().x, y);
         c->draw(window);
     }
 }

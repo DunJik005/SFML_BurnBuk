@@ -2,6 +2,7 @@
 #define SFMLPROJECT_GAMECONTROLLER_H
 
 #include "Board.h"
+#include "Deck.h"
 #include "HandleAttack.h"
 #include "TurnButtons.h"
 #include "Graveyard.h"
@@ -45,9 +46,9 @@ public:
         float windowWidth);
 
     void sendBoardCardToGraveyard(
-        Board& board,
+        Tile& tile,
         Graveyard& graveyard,
-        std::shared_ptr<CardBoard>& card
+        std::shared_ptr<Card>& card
     );
 
 

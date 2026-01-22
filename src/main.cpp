@@ -2,7 +2,6 @@
 #include "Board.h"
 #include "Card.h"
 #include "CardHand.h"
-#include "CardBoard.h"
 #include "Hand.h"
 #include "Deck.h"
 #include "Graveyard.h"
@@ -12,15 +11,23 @@
 #include "GameController.h"
 #include "CardDataBase.h"
 #include <iostream>
-
+#include <SFML/Audio.hpp>
 using namespace sf;
 
 int main() {
+    sf::Clock clock; //meri vreme za skrol
+
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
+    sf::Music music;
+    if (!music.openFromFile("assets/music/POTC.ogg")) {
+        std::cout << "Muzika nije ucitana."<< std::endl;
+    }
+    music.play();
+    music.setLooping(true);
     RenderWindow window(
         //VideoMode({1820,1080}),
-        VideoMode({1344, 800}),
+        VideoMode({1000, 600}),
         "Tedzan uci",
         sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize
     );
@@ -65,7 +72,7 @@ int main() {
 
     //pravi se graveyard instanca i selected board karta za graveyard (na foru selectedCarda za hand)
     Graveyard graveyard;
-    std::shared_ptr<CardBoard> selectedBoardCard = nullptr;
+    std::shared_ptr<Card> selectedBoardCard = nullptr;
 
 
 // pravi se card view instanca
@@ -75,6 +82,10 @@ int main() {
 
     while (window.isOpen())
     {
+
+        int selectedBoardRow = -1;
+        int selectedBoardCol = -1;
+
 
 
         Hand* activeHand = nullptr;
@@ -102,12 +113,22 @@ int main() {
             // Zatvaranje
             if (event->is<Event::Closed>())
                 window.close();
+            //SCROLL EVENT
+            if (event->is<sf::Event::MouseWheelScrolled>())
+            {
+                auto* e = event->getIf<sf::Event::MouseWheelScrolled>();
 
+                if (e->wheel == sf::Mouse::Wheel::Vertical)
+                {
+                    cardView.scrollDescription(e->delta);
+                }
+            }
             // Resize
             if (event->is<Event::Resized>())
             {
                 auto* e = event->getIf<Event::Resized>();
                 board.onResize(e->size.x, e->size.y);
+                turnButtons.onResize(e->size.x, e->size.y);
                 p1Hand.onResize(window.getSize().x, window.getSize().y);
                 p2Hand.onResize(window.getSize().x, window.getSize().y);
 
@@ -124,9 +145,12 @@ int main() {
                 window.setView(view);
             }
 
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            board.updateHover(mousePos.x, mousePos.y);
             // Klik
             if (event->is<Event::MouseButtonPressed>())
             {
+                cardView.hide();
                 auto* e = event->getIf<Event::MouseButtonPressed>();
                 if (e->button == sf::Mouse::Button::Left)
                 {
@@ -170,14 +194,18 @@ int main() {
 
 
                     //    CLICK NA TILE HANDLER I OSTALO
-                    int tile = board.getTileIndexAt(mouseX, mouseY);
-                    if (tile >= 0) {
-                        auto boardCard = board.getCardAt(tile);
+                    auto [row, col] = board.getTileAtPosition(mouseX, mouseY);
+
+                    if (row != -1) {
+                        auto boardCard = board.getTile(row, col).getAttackTarget();
                         if (boardCard) {
                             selectedBoardCard = boardCard;
+                            selectedBoardRow = row;
+                            selectedBoardCol = col;
                             selectedCard = nullptr;
                             continue;
                         }
+
 
                         if (selectedCard) {
                             const sf::Texture* texPtr = &selectedCard->getSprite().getTexture();
@@ -194,7 +222,7 @@ int main() {
 
 
                             // napravi CardBoard koristeći postojeći konstruktor (nasleđeni iz Card)
-                            auto cb = std::make_shared<CardBoard>(
+                            auto cb = std::make_shared<Card>(
                                 selectedCard->getName(),
                                 *texNonConst,
                                 selectedCard->getHP(),
@@ -224,7 +252,7 @@ int main() {
                             }
 
                             // 2. POKUSAJ POSTAVLJANJA
-                            bool ok = board.placeCardAt(tile, cb);
+                            bool ok = board.placeCard(row, col, cb);
 
                             if (ok) {
                                 activeHand->removeHand(selectedCard, window.getSize().x);
@@ -267,10 +295,11 @@ int main() {
                             std::string name = selectedBoardCard->getName();
 
                             gameController.sendBoardCardToGraveyard(
-                                board,
-                                graveyard,
-                                selectedBoardCard
-                            );
+                            board.getTile(selectedBoardRow, selectedBoardCol),
+                            graveyard,
+                            selectedBoardCard
+                        );
+
 
                             std::cout << "Poslata je karta sa boarda na graveyard: "
                                       << name << std::endl;
@@ -298,6 +327,8 @@ int main() {
 
             }
         }
+        float dt = clock.restart().asSeconds();
+        cardView.update(dt);
 
         window.clear(Color::White);
         board.draw(window);
