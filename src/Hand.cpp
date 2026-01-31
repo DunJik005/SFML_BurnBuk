@@ -9,10 +9,10 @@ void Hand::onResize(float windowWidth, float windowHeight) {
     /* OVDE CE DA SE MENJA BASEY PO ACTIVEU */
     float margin = windowHeight / 8.f;
 
-if (isActive)
-    baseY = windowHeight - margin;
-else
-    baseY = margin;
+    if (isActive)
+        baseY = windowHeight - margin;
+    else
+        baseY = margin;
 
 
     spacing = windowWidth * 0.15f;

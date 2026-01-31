@@ -148,7 +148,22 @@ bool Tile::placeCard(const std::shared_ptr<Card>& card) {
     cards.push_back(card);
     fitCardToTile(card);
 
+    placedThisTurnCount++;
+
     return true;
+}
+
+bool Tile::canReturnCard(Owner currentPlayer) const {
+
+    if (placedThisTurnCount <= 0)
+        return false;
+
+    if (cards.empty())
+        return false;
+
+    // gornja karta mora biti igraceva
+    return cards.back()->getOwner() == currentPlayer;
+
 }
 
 std::shared_ptr<Card> Tile::removeTopCard() {
@@ -157,6 +172,19 @@ std::shared_ptr<Card> Tile::removeTopCard() {
     auto card = cards.back();
     cards.pop_back();
     return card;
+}
+
+std::shared_ptr<Card> Tile::returnTopCardToHand() {
+
+    if (cards.empty() || placedThisTurnCount <= 0)
+        return nullptr;
+
+    auto card = cards.back();
+    cards.pop_back();
+
+    placedThisTurnCount--; // 👈 KLJUČNO
+    return card;
+
 }
 
 // ---------- Visual ----------
@@ -202,20 +230,20 @@ void Tile::draw(sf::RenderWindow& window)
     // 1️⃣ crtaj tile normalno
     window.draw(shape);
 
-    // 2️⃣ hover glow (overlay, NE fillColor)
-    if (hovered)
-    {
-        sf::RectangleShape overlay;
-        overlay.setPosition(shape.getPosition());
-        overlay.setSize(shape.getSize());
-        overlay.setFillColor(sf::Color(255, 255, 255, 40)); // lagani glow
-
-        window.draw(overlay);
-    }
-
     // 3️⃣ crtaj karte potpuno normalno
     for (auto& card : cards)
         card->draw(window);
+
+    if (!cards.empty() && canReturnCard(cards.back()->getOwner()))
+    {
+        returnButton.setBounds(cards.back()->getBounds());
+        returnButton.setVisible(true);
+        returnButton.draw(window);
+    }
+    else
+    {
+        returnButton.setVisible(false);
+    }
 }
 
 std::shared_ptr<Card> Tile::getAttackTarget() {
@@ -248,4 +276,9 @@ sf::Vector2f Tile::getPosition() const {
 
 sf::Vector2f Tile::getSize() const {
     return shape.getSize();
+}
+
+bool Tile::handleReturnClick(float x, float y) const
+{
+    return returnButton.contains(x, y);
 }

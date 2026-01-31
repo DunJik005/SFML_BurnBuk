@@ -8,6 +8,7 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 #include "Card.h"
+#include "ReturnButton.h"
 
 
 class Tile {
@@ -38,8 +39,14 @@ public:
     // ---------- Card stack ----------
     bool canPlace(const std::shared_ptr<Card>& card) const;
     bool placeCard(const std::shared_ptr<Card>& card);
+    bool canReturnCard(Owner currentPlayer) const;
+    int getPlacedThisTurnCount() const { return placedThisTurnCount; }
+    void setPlacedThisTurnCount(int n) {
+        placedThisTurnCount = n;
+    }
 
     std::shared_ptr<Card> removeTopCard();
+    std::shared_ptr<Card> returnTopCardToHand();
     std::shared_ptr<Card> topCard() const;
     std::shared_ptr<Card> bottomCard() const;
 
@@ -54,6 +61,7 @@ public:
 
     void setTexture(sf::Texture* texture);
     void setHovered(bool h);
+    bool isHovered() const { return hovered; }
 
     void setPosition(float x, float y);
     void setSize(float w, float h);
@@ -62,6 +70,7 @@ public:
     void draw(sf::RenderWindow& window);
     std::shared_ptr<Card> getAttackTarget();
 
+    bool handleReturnClick(float x, float y) const;
 
 private:
     // ---------- Core data ----------
@@ -71,16 +80,19 @@ private:
     // bottom -> front, top -> back
     std::list<std::shared_ptr<Card>> cards;
 
+    int placedThisTurnCount = 0;
+
+
     // ---------- Visual ----------
     sf::RectangleShape shape;
 
     bool hovered = false;
 
-
-
-private:
     // ---------- Internal helpers ----------
     void fitCardToTile(const std::shared_ptr<Card>& card);
+
+    ReturnButton returnButton;
+
 };
 
 

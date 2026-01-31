@@ -1,6 +1,10 @@
 #include "Board.h"
-#include "Tile.h"
 #include <iostream>
+
+
+
+static constexpr float BOARD_HEIGHT_RATIO = 0.70f; // 70%
+
 
 // ---------- Ctor ----------
 Board::Board(float windowWidth, float windowHeight)
@@ -32,7 +36,7 @@ void Board::initTiles()
             Tile& tile = grid[r][c];
 
             // Active / Inactive rows
-            if (r == 1 || r == 3 || r == 5 || r == 7)
+            if (r == 1 || r== 2 || r == 3 || r == 5 || r == 7)
                 tile.setState(Tile::State::Active);
             else
                 tile.setState(Tile::State::Inactive);
@@ -66,69 +70,73 @@ void Board::onResize(float windowWidth, float windowHeight)
 // ---------- Layout ----------
 void Board::recalcLayout()
 {
-    const float pxTileW   = winW * tileW;
-    const float pxTileH   = pxTileW * 6.f / 5.f;
+    // 1️⃣ visina boarda (60% ekrana)
+    const float boardHeight = winH * BOARD_HEIGHT_RATIO;
+    const float boardTop    = (winH - boardHeight) / 2.f;
+
+    // 2️⃣ spacing (horizontalni i vertikalni isti)
     const float pxSpacing = winW * spacing;
 
+    // 3️⃣ pronađi aktivne redove
+    std::vector<int> activeRows;
+    for (int r = 0; r < ROWS; r++)
+    {
+        if (grid[r][0].isActive())
+            activeRows.push_back(r);
+    }
+
+    const int rowCount = static_cast<int>(activeRows.size());
+    if (rowCount == 0)
+        return;
+
+    // 4️⃣ izračunaj veličinu karte iz VISINE (proporcija 6 : 5)
+    const float availableH =
+        boardHeight - (rowCount - 1) * pxSpacing;
+
+    const float tileH = availableH / rowCount;
+    const float tileW = tileH * 5.f / 6.f;
+
+    // 5️⃣ ukupna širina boarda
     const float boardWidth =
-        COLS * pxTileW + (COLS - 1) * pxSpacing;
+        COLS * tileW + (COLS - 1) * pxSpacing;
 
     const float startX = (winW - boardWidth) / 2.f;
 
-    // 1️⃣ definisi FRONT redove (sidra)
-    const int p1FrontRow = 3;
-    const int p2FrontRow = 5;
+    // 6️⃣ rasporedi redove odozgo nadole unutar boarda
+    float y = boardTop;
 
-    // 2️⃣ Y pozicija front linije (CENTAR EKRANA)
-    const float centerY = winH / 2.f;
+    for (int idx = 0; idx < rowCount; idx++)
+    {
+        int r = activeRows[idx];
 
-    // 3️⃣ Postavi Player1 front red
-    for (int c = 0; c < COLS; c++) {
-        grid[p1FrontRow][c].setSize(pxTileW, pxTileH);
-        grid[p1FrontRow][c].setPosition(
-            startX + c * (pxTileW + pxSpacing),
-            centerY - pxTileH - pxSpacing / 2.f
-        );
-    }
-
-    // 4️⃣ Postavi Player2 front red
-    for (int c = 0; c < COLS; c++) {
-        grid[p2FrontRow][c].setSize(pxTileW, pxTileH);
-        grid[p2FrontRow][c].setPosition(
-            startX + c * (pxTileW + pxSpacing),
-            centerY + pxSpacing / 2.f
-        );
-    }
-
-    // 5️⃣ Player1 – redovi IZA fronta (naviše)
-    int offset = 1;
-    for (int r = p1FrontRow - 1; r >= 0; r--) {
-        if (!grid[r][0].isActive()) continue;
-
-        for (int c = 0; c < COLS; c++) {
-            grid[r][c].setSize(pxTileW, pxTileH);
+        for (int c = 0; c < COLS; c++)
+        {
+            grid[r][c].setSize(tileW, tileH);
             grid[r][c].setPosition(
-                startX + c * (pxTileW + pxSpacing),
-                centerY - (offset + 1) * (pxTileH + pxSpacing)
+                startX + c * (tileW + pxSpacing),
+                y
             );
         }
-        offset++;
+
+        y += tileH + pxSpacing;
     }
+}
 
-    // 6️⃣ Player2 – redovi IZA fronta (naniže)
-    offset = 1;
-    for (int r = p2FrontRow + 1; r < ROWS; r++) {
-        if (!grid[r][0].isActive()) continue;
-
-        for (int c = 0; c < COLS; c++) {
-            grid[r][c].setSize(pxTileW, pxTileH);
-            grid[r][c].setPosition(
-                startX + c * (pxTileW + pxSpacing),
-                centerY + offset * (pxTileH + pxSpacing)
-            );
+float Board::getLeftEdge() const {
+    for (int r = 0; r < ROWS; ++r)
+    {
+        for (int c = 0; c < COLS; ++c)
+        {
+            const Tile& tile = grid[r][c];
+            if (tile.isActive())
+                return tile.getPosition().x;
         }
-        offset++;
     }
+    return 0.f; // fallback
+}
+
+float Board::getCenterY() const {
+    return winH / 2.f;
 }
 
 std::pair<int, int> Board::getTileAtPosition(float x, float y) const
@@ -202,6 +210,8 @@ bool Board::placeCard(int row, int col, std::shared_ptr<Card> card)
 {
     if (!card)
         return false;
+
+
 
     if (!isValidPosition(row, col))
         return false;
@@ -404,64 +414,13 @@ bool Board::getTargetPosition(
 
 
 
-// ---------- Draw ----------
-void Board::draw(sf::RenderWindow& window)
+void Board::draw(
+sf::RenderWindow& window,
+const std::shared_ptr<Card>& selected,
+Owner currentPlayer)
 {
     window.draw(windowBackground);
-    for (int r = 0; r < ROWS; r++)
-        for (int c = 0; c < COLS; c++)
-            grid[r][c].draw(window);
-}
 
-
-
-
-
-
-
-
-
-sf::Vector2f Board::getDeckPosition() const {
-    // desno od boarda, u visini prvog reda
-    const Tile& t = grid[0][COLS - 1];
-    auto pos = t.getPosition();
-    return { pos.x + t.getSize().x + winW * 0.02f, pos.y };
-}
-
-
-
-sf::FloatRect Board::getDeckBounds() const {
-    auto pos = getDeckPosition();
-    float w = winW * 0.08f;
-    float h = w * 1.4f;
-
-    return sf::FloatRect(
-        sf::Vector2f(pos.x, pos.y),
-        sf::Vector2f(w, h)
-    );
-}
-
-sf::FloatRect Board::getGraveyardBounds() const {
-    const Tile& t = grid[0][0];
-    auto pos = t.getPosition();
-    float w = winW * 0.08f;
-    float h = w * 1.4f;
-
-    return sf::FloatRect(
-        sf::Vector2f(pos.x - w - winW * 0.02f, pos.y),
-        sf::Vector2f(w, h)
-    );
-}
-
-
-
-
-
-
-void Board::drawBoardCards(
-    sf::RenderWindow& window,
-    const std::shared_ptr<Card>& selected)
-{
     for (int r = 0; r < ROWS; r++)
     {
         for (int c = 0; c < COLS; c++)
@@ -471,46 +430,44 @@ void Board::drawBoardCards(
             if (!tile.isActive())
                 continue;
 
+            // 1️⃣ tile
+            tile.draw(window);
+
+            // 2️⃣ karta (ako postoji)
             auto card = tile.getAttackTarget();
-            // ili getTopCard() ako imaš stack
-
-            if (!card)
-                continue;
-
-            // 1️⃣ reset visuals
-            card->resetVisuals();
-
-            // 2️⃣ selektovana karta → potamni
-            if (card == selected)
+            if (card)
             {
-                card->setBrightness(false);
+                card->resetVisuals();
+
+                if (card == selected)
+                {
+                    sf::FloatRect b = card->getBounds();
+                    sf::RectangleShape border;
+                    border.setPosition({b.position.x - 3.f, b.position.y - 3.f});
+                    border.setSize({b.size.x + 6.f, b.size.y + 6.f});
+                    border.setFillColor(sf::Color::Transparent);
+                    window.draw(border);
+                    if (tile.canReturnCard(currentPlayer) && card)
+                    {
+                        overlayRenderer.draw(
+                            window,
+                            card->getBounds(),
+                            OverlayType::Return
+                        );
+                    }
+                }
             }
-
-            // 3️⃣ draw karta
-            card->draw(window);
-
-            // 4️⃣ border za selektovanu
-            if (card == selected)
+            else if (tile.isHovered())
             {
-                sf::FloatRect b = card->getBounds();
-
-                sf::RectangleShape border;
-                border.setPosition(
-                    sf::Vector2f(b.position.x - 3.f, b.position.y - 3.f)
+                overlayRenderer.draw(
+                    window,
+                    tile.getBounds(),
+                    OverlayType::Hover
                 );
-                border.setSize(
-                    sf::Vector2f(b.size.x + 6.f, b.size.y + 6.f)
-                );
-                border.setFillColor(sf::Color::Transparent);
-                border.setOutlineThickness(3.f);
-                border.setOutlineColor(sf::Color::Green);
-
-                window.draw(border);
             }
         }
     }
 }
-
 
 
 Tile& Board::getTile(int row, int col)
@@ -531,7 +488,12 @@ bool Board::isValidPosition(int row, int col) const
            col >= 0 && col < COLS;
 }
 
-
+void Board::resetPlacedThisTurn()
+{
+    for (int r = 0; r < ROWS; ++r)
+        for (int c = 0; c < COLS; ++c)
+            grid[r][c].setPlacedThisTurnCount(0);
+}
 
 
 void Board::damagePlayer(Owner attacker, int damage)
