@@ -9,8 +9,16 @@
 
 enum class Owner {
     Player1,
-    Player2
+    Player2,
+    None
 };
+
+enum class PlacementType {
+    Normal,        // standardna karta (na svoj tile)
+    Parasite,      // kači se na enemy kartu (stack)
+    Infiltrator    // ide na prazno enemy polje
+};
+
 
 enum class Rarity { Common, Rare, Epic, Legendary, Hero };
 
@@ -60,6 +68,10 @@ private:
     int hitCount;
     Owner owner;
 
+    PlacementType placementType = PlacementType::Normal;
+
+    bool ignoresTileRules = false;
+
 
     BaseAttack baseAttack;
     AttackModifier modifiers;
@@ -82,14 +94,13 @@ private:
 
 
 public:
-    Card(
-         std::string name, sf::Texture& tex, int hp = 1, int dmg = 1, int cost = 1,
-         Rarity rarity = Rarity::Common,
-         //AttackType attackType = AttackType::Chomper,
-         BaseAttack base = BaseAttack::Chomper,
-         AttackModifier mods = AttackModifier::None,
-         int hits = 1,
-         const std::string& description = "");
+    Card(std::string name, sf::Texture& tex, int hp = 1, int dmg = 1, int cost = 1,
+     Rarity rarity = Rarity::Common,
+     BaseAttack base = BaseAttack::Chomper,
+     AttackModifier mods = AttackModifier::None,
+     int hits = 1,
+     const std::string& description = "",
+     PlacementType placement = PlacementType::Normal);
 
     // SETTERS
     void setHP(int h) { hp = h; }
@@ -106,13 +117,15 @@ public:
     void setBaseAttack(BaseAttack b) { baseAttack = b; }
     void setModifiers(AttackModifier m) { modifiers = m; }
     void setHitCount(int c) { hitCount = c; }
+    void setPlacementType(PlacementType p) { placementType = p;}
+    void setIgnoresTileRules(bool v) { ignoresTileRules = v; }
 
     // dodata metoda za setSpritePosition, mozda bude mogo i obican setPosition
     void setSpritePosition(float x, float y) { sprite.setPosition({x, y}); }
 
     void setBrightness(bool value);
     void resetVisuals();
-
+    void applyVisualMode();
 
     void flip() { faceUp = !faceUp; }
 
@@ -140,6 +153,7 @@ public:
     const std::string& getDescription() const { return description; }
     const sf::Sprite& getSprite() const { return sprite; }
     sf::Sprite& getSprite(){ return sprite; }
+    sf::IntRect getArtRect() const; //
     const sf::Sprite& getFrameSprite() const {return rarityFrameSprite;}
     std::vector<std::shared_ptr<Ability>>& getAbilities() { return abilities; }
     const sf::Texture* getTexture() const { return texture; }
@@ -150,6 +164,8 @@ public:
     BaseAttack getBaseAttack() const { return baseAttack; }
     AttackModifier getModifiers() const { return modifiers; }
     int getHitCount() const{ return hitCount; }
+    PlacementType getPlacementType()const{return placementType;}
+    bool getIgnoresTileRules() const { return ignoresTileRules; }
 
 
     static sf::Texture& getRarityFrame(Rarity r);

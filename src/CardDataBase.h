@@ -64,7 +64,7 @@ private:
         {
             std::cerr << "Greska pri ucitavanju dorota!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Dorot",dorotTex, 0, 10, 0, Rarity::Common, BaseAttack::Chomper));
+        allCards.push_back(std::make_shared<Card>("Dorot",dorotTex, 0, 10, 0, Rarity::Common, BaseAttack::Chomper,AttackModifier::Zlatni,1,"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. "));
         if (!homoTex.loadFromFile("assets/cards/homohabilis.jpg"))
         {
             std::cerr << "Greska pri ucitavanju homohabilisa!\n";
@@ -85,21 +85,7 @@ private:
             std::cerr << "Greska pri ucitavanju ivane!\n";
         }
         allCards.push_back(std::make_shared<Card>("Ivana Dzarka",dzarkaTex, 0, 3, 1, Rarity::Rare, BaseAttack::Jelepeno));
-        if (!tijanaTex.loadFromFile("assets/cards/gladijator.jpg"))
-        {
-            std::cerr << "Greska pri ucitavanju tijane!\n";
-        }
-        allCards.push_back(std::make_shared<Card>("Tijana Gladijator", tijanaTex,5,5,0, Rarity::Common, BaseAttack::Chomper));
-        if (!grbaviTex.loadFromFile("assets/cards/grbavi.jpg"))
-        {
-            std::cerr << "Greska pri ucitavanju mine!\n";
-        }
-        allCards.push_back(std::make_shared<Card>("Mina Grbavi", grbaviTex,4,5,0, Rarity::Common, BaseAttack::Peashooter));
-        if (!kepecTex.loadFromFile("assets/cards/miloskepec.jpg"))
-        {
-            std::cerr << "Greska pri ucitavanju tijane!\n";
-        }
-        allCards.push_back(std::make_shared<Card>("Milos Kepec", kepecTex,7,0,0, Rarity::Common, BaseAttack::Pijavica));
+        //allCards.push_back(std::make_shared<Card>("Mina Grbavi", grbaviTex,4,5,9, Rarity::Common, BaseAttack::Peashooter));
         if (!nosferatuTex.loadFromFile("assets/cards/nosferatu.jpg"))
         {
             std::cerr << "Greska pri ucitavanju nosferatua!\n";
@@ -109,7 +95,8 @@ private:
         {
             std::cerr << "Greska pri ucitavanju rtd sefa!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Sef Katedre", rtdsefTex, 14, 7, 0, Rarity::Rare, BaseAttack::Peashooter, AttackModifier::Zlatni));
+        allCards.push_back(std::make_shared<Card>("RTD Sef", rtdsefTex, 14, 7, 0, Rarity::Rare, BaseAttack::Peashooter, AttackModifier::Zlatni,1,"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. "));
+
         if (!martamajmunTex.loadFromFile("assets/cards/martamajmun.jpg"))
         {
             std::cerr << "Greska pri ucitavanju marte majmunice!\n";

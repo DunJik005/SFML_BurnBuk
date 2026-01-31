@@ -1,7 +1,3 @@
-//
-// Created by lazab on 12/22/2025.
-//
-
 #ifndef SFMLPROJECT_ATTACKSYSTEM_H
 #define SFMLPROJECT_ATTACKSYSTEM_H
 
@@ -9,14 +5,16 @@
 
 class AttackSystem {
 public:
-    static void resolveAttack(Board& board, int attackerIndex);
+    static void resolveAttack(Board& board, int row, int col);
 
 private:
     static void attackChomper(Board& board, int index);
     static void attackPeashooter(Board& board, int index);
     static void attackNut(Board& board, int index);
     static void attackJelepeno(Board& board, int index);
-    static void linearAttack(Board& board, Card& attacker, int index);
+    //static void linearAttack(Board& board, Card& attacker, int index);
+    static void linearAttack(Board& board, int row, int col);
+
 
 
 

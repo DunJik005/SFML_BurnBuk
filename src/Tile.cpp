@@ -1,10 +1,15 @@
 #include "Tile.h"
+constexpr float STATS_RATIO = 0.15f;  // 15%
+constexpr float ART_RATIO   = 0.85f;  // 85%
 
 // ---------- Ctor ----------
-Tile::Tile() {
-    shape.setFillColor(sf::Color(200, 200, 220));
+Tile::Tile() : statsText(getFont()){
+    shape.setFillColor(sf::Color::White);
     shape.setOutlineThickness(2.f);
     shape.setOutlineColor(sf::Color::Black);
+    statsBar.setFillColor(sf::Color::Black);
+    statsText.setFillColor(sf::Color::White);
+
 }
 
 // ---------- State / Ownership ----------
@@ -42,12 +47,12 @@ size_t Tile::cardCount() const {
     return cards.size();
 }
 
-std::shared_ptr<CardBoard> Tile::topCard() const {
+std::shared_ptr<Card> Tile::topCard() const {
     if (cards.empty()) return nullptr;
     return cards.back();
 }
 
-std::shared_ptr<CardBoard> Tile::bottomCard() const {
+std::shared_ptr<Card> Tile::bottomCard() const {
     if (cards.empty()) return nullptr;
     return cards.front();
 }
@@ -78,7 +83,7 @@ void Tile::cleanupDeadCards()
 
 
 // ---------- Placement rules ----------
-bool Tile::canPlace(const std::shared_ptr<CardBoard>& card) const
+bool Tile::canPlace(const std::shared_ptr<Card>& card) const
 {
     if (!card) {
         std::cout << "[canPlace] FAIL: null card\n";
@@ -141,7 +146,7 @@ bool Tile::canPlace(const std::shared_ptr<CardBoard>& card) const
     return false;
 }
 
-bool Tile::placeCard(const std::shared_ptr<CardBoard>& card) {
+bool Tile::placeCard(const std::shared_ptr<Card>& card) {
     if (!canPlace(card))
         return false;
 
@@ -151,7 +156,7 @@ bool Tile::placeCard(const std::shared_ptr<CardBoard>& card) {
     return true;
 }
 
-std::shared_ptr<CardBoard> Tile::removeTopCard() {
+std::shared_ptr<Card> Tile::removeTopCard() {
     if (cards.empty()) return nullptr;
 
     auto card = cards.back();
@@ -160,6 +165,22 @@ std::shared_ptr<CardBoard> Tile::removeTopCard() {
 }
 
 // ---------- Visual ----------
+
+void Tile::setTexture(sf::Texture* texture)
+{
+    shape.setTexture(texture);
+}
+
+void Tile::setHovered(bool h)
+{
+    hovered = h;
+}
+void Tile::setFont(sf::Font& f)
+{
+    font = &f;
+    statsText.setFont(f);
+}
+
 void Tile::setPosition(float x, float y) {
     shape.setPosition({x, y});
 
@@ -174,19 +195,42 @@ void Tile::setSize(float w, float h) {
         fitCardToTile(card);
 }
 
-sf::FloatRect Tile::getBounds() const {
+sf::FloatRect Tile::getBounds() const
+{
+    if (state == State::Inactive)
+        return sf::FloatRect();
+
     return shape.getGlobalBounds();
 }
 
-void Tile::draw(sf::RenderWindow& window) {
+void Tile::draw(sf::RenderWindow& window)
+{
+    if (state == State::Inactive)
+        return;
+
+    // 1️⃣ crtaj tile normalno
     window.draw(shape);
 
-    // donja → gornja (prirodan redosled)
-    for (auto& card : cards)
+    // 2️⃣ hover glow (overlay, NE fillColor)
+    if (hovered)
+    {
+        sf::RectangleShape overlay;
+        overlay.setPosition(shape.getPosition());
+        overlay.setSize(shape.getSize());
+        overlay.setFillColor(sf::Color(255, 255, 255, 40)); // lagani glow
+
+        window.draw(overlay);
+    }
+
+    // 3️⃣ crtaj karte potpuno normalno
+    for (auto& card : cards) {
         card->draw(window);
+        window.draw(statsBar);
+        window.draw(statsText);
+    }
 }
 
-std::shared_ptr<CardBoard> Tile::getAttackTarget() {
+std::shared_ptr<Card> Tile::getAttackTarget() {
     if (cards.empty())
         return nullptr;
 
@@ -195,16 +239,68 @@ std::shared_ptr<CardBoard> Tile::getAttackTarget() {
 }
 
 // ---------- Internal ----------
-void Tile::fitCardToTile(const std::shared_ptr<CardBoard>& card) {
+void Tile::fitCardToTile(const std::shared_ptr<Card>& card) {
     if (!card) return;
 
+    sf::Vector2f tilePos  = shape.getPosition();
+    sf::Vector2f tileSize = shape.getSize();
+
+    float statsHeight = tileSize.y * STATS_RATIO;
+
+    statsBar.setPosition(tilePos);
+    statsBar.setSize({ tileSize.x, statsHeight });
+    statsText.setString(
+    "DMG: " + std::to_string(card->getDamage()) +
+    "  HP: "  + std::to_string(card->getHP())
+);
+    unsigned charSize = static_cast<unsigned>(statsHeight * 0.9f);
+    statsText.setCharacterSize(charSize);
+    sf::FloatRect textBounds = statsText.getLocalBounds();
+
+    statsText.setPosition({
+        tilePos.x + (tileSize.x - textBounds.size.x) / 2.f - textBounds.position.x,
+        tilePos.y + (statsHeight - textBounds.size.y) / 2.f - textBounds.position.y
+    });
+
+
+    card->applyVisualMode();
     sf::Sprite& sprite = card->getSprite();
     const sf::FloatRect bounds = sprite.getLocalBounds();
 
-    sprite.setPosition(shape.getPosition());
+    float artHeight = tileSize.y * ART_RATIO;
+    float artTop    = tilePos.y + statsHeight;
+    // scale da stane u 80%
+    float scaleX = tileSize.x / bounds.size.x;
+    float scaleY = artHeight   / bounds.size.y;
+    float scale  = std::min(scaleX, scaleY);
 
-    sprite.setScale({
-        shape.getSize().x / bounds.size.x,
-        shape.getSize().y / bounds.size.y
+    sprite.setScale({ scale, scale });
+
+    // centriranje u donjem delu
+    sprite.setPosition({
+        tilePos.x + (tileSize.x - bounds.size.x * scale) / 2.f,
+        artTop    + (artHeight - bounds.size.y * scale) / 2.f
     });
+}
+
+
+sf::Vector2f Tile::getPosition() const {
+    return shape.getPosition();
+}
+
+sf::Vector2f Tile::getSize() const {
+    return shape.getSize();
+}
+
+sf::Font& Tile::getFont() {
+    static sf::Font font;
+    static bool initialized = false;
+
+    if (!initialized) {
+        if (!font.openFromFile("assets/fonts/MatrixSmallCaps.ttf")) {
+            std::cerr << "greska: font nije ucitan\n";
+        }
+        initialized = true;
+    }
+    return font;
 }

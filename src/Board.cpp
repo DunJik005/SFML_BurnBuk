@@ -1,441 +1,531 @@
 #include "Board.h"
+#include "Tile.h"
 #include <iostream>
 
-sf::RectangleShape windowBackground;
-sf::Texture windowBackgroundTexture;
 
-sf::Texture tileTexture;
 
+static constexpr float BOARD_HEIGHT_RATIO = 0.70f; // 70%
+
+
+// ---------- Ctor ----------
 Board::Board(float windowWidth, float windowHeight)
+    : winW(windowWidth), winH(windowHeight)
 {
-    winW = windowWidth;
-    winH = windowHeight;
 
-    // --- window background ---
     if (!windowBackgroundTexture.loadFromFile("assets/backgroundtexture.png")) {
         std::cerr << "Ne mogu da ucitam backgroundtexture.png!\n";
     }
+
     windowBackground.setSize({winW, winH});
     windowBackground.setPosition({0.f, 0.f});
     windowBackground.setTexture(&windowBackgroundTexture);
 
-    if (!tileTexture.loadFromFile("assets/tiletexture.png")) {
+    if (!tileActiveTex.loadFromFile("assets/tiletexture.png")) {
         std::cerr << "Ne mogu da ucitam tiletexture.png!\n";
     }
 
-    // pripremi sve tileove
-    tiles.resize(rows * cols);
-    for (auto& t : tiles)
-    {
-        t.setFillColor(sf::Color(200, 200, 220));
-        t.setTexture(&tileTexture); // tile texture
-    }
-
-    graveyard.setFillColor(sf::Color(180, 50, 50));
-    deck.setFillColor(sf::Color(50, 120, 180));
-
-    // učitaj tile texture
-    if (!tileTexture.loadFromFile("assets/tiletexture.png")) {
-        std::cerr << "Ne mogu da ucitam tiletexture.png!\n";
-    }
-
+    initTiles();
     recalcLayout();
-
-    boardCards.resize(rows * cols); // svi nullptr
 }
 
+// ---------- Init tiles ----------
+void Board::initTiles()
+{
 
+    for (int r = 0; r < ROWS; r++) {
+        for (int c = 0; c < COLS; c++) {
 
+            Tile& tile = grid[r][c];
 
+            // Active / Inactive rows
+            if (r == 1 || r == 3 || r == 5 || r == 7)
+                tile.setState(Tile::State::Active);
+            else
+                tile.setState(Tile::State::Inactive);
+
+            if (tile.isActive())
+                tile.setTexture(&tileActiveTex);
+
+            // Ownership
+            if (r < Board::ROWS / 2)          // 0,1,2,3
+                tile.setOwner(Owner::Player1);
+            else if (r > Board::ROWS / 2)     // 5,6,7,8
+                tile.setOwner(Owner::Player2);
+            else                              // r == 4
+                tile.setOwner(Owner::None);
+
+        }
+    }
+}
+
+// ---------- Resize ----------
 void Board::onResize(float windowWidth, float windowHeight)
 {
+
     winW = windowWidth;
     winH = windowHeight;
-
-    recalcLayout();
     windowBackground.setSize({ winW, winH });
 
-    // 🔥 refit svih karata na boardu
-    for (int i = 0; i < (int)boardCards.size(); ++i)
-    {
-        if (boardCards[i])
-            fitCardToTile(boardCards[i], i);
-    }
+    recalcLayout();
 }
 
-
-
+// ---------- Layout ----------
 void Board::recalcLayout()
 {
-    float pxTileW   = winW * tileW;
-    float pxTileH   = pxTileW * 6.f / 5.f;
-    float pxSpacing = winW * spacing;
+    // 1️⃣ visina boarda (60% ekrana)
+    const float boardHeight = winH * BOARD_HEIGHT_RATIO;
+    const float boardTop    = (winH - boardHeight) / 2.f;
 
-    float boardWidth  = cols * pxTileW + (cols - 1) * pxSpacing;
-    float boardHeight = rows * pxTileH + (rows - 1) * pxSpacing;
+    // 2️⃣ spacing (horizontalni i vertikalni isti)
+    const float pxSpacing = winW * spacing;
 
-    float offsetX = (winW - (boardWidth + pxTileW*2 + pxSpacing*3)) / 2.f;
-    float offsetY = (winH - boardHeight) / 2.f;
-
-    // start x za table (posle graveyarda)
-    float boardStartX = offsetX + pxTileW + pxSpacing;
-    float boardStartY = offsetY;
-
-    // postavi tileove
-    for (int r = 0; r < rows; r++)
+    // 3️⃣ pronađi aktivne redove
+    std::vector<int> activeRows;
+    for (int r = 0; r < ROWS; r++)
     {
-        for (int c = 0; c < cols; c++)
+        if (grid[r][0].isActive())
+            activeRows.push_back(r);
+    }
+
+    const int rowCount = static_cast<int>(activeRows.size());
+    if (rowCount == 0)
+        return;
+
+    // 4️⃣ izračunaj veličinu karte iz VISINE (proporcija 6 : 5)
+    const float availableH =
+        boardHeight - (rowCount - 1) * pxSpacing;
+
+    const float tileH = availableH / rowCount;
+    const float tileW = tileH * 5.f / 6.f;
+
+    // 5️⃣ ukupna širina boarda
+    const float boardWidth =
+        COLS * tileW + (COLS - 1) * pxSpacing;
+
+    const float startX = (winW - boardWidth) / 2.f;
+
+    // 6️⃣ rasporedi redove odozgo nadole unutar boarda
+    float y = boardTop;
+
+    for (int idx = 0; idx < rowCount; idx++)
+    {
+        int r = activeRows[idx];
+
+        for (int c = 0; c < COLS; c++)
         {
-            int idx = r * cols + c;
+            grid[r][c].setSize(tileW, tileH);
+            grid[r][c].setPosition(
+                startX + c * (tileW + pxSpacing),
+                y
+            );
+        }
 
-            float x = boardStartX + c * (pxTileW + pxSpacing);
-            float y = boardStartY + r * (pxTileH + pxSpacing);
+        y += tileH + pxSpacing;
+    }
+}
 
-            tiles[idx].setSize({pxTileW, pxTileH});
-            tiles[idx].setPosition({x, y});
+std::pair<int, int> Board::getTileAtPosition(float x, float y) const
+{
+    for (int r = 0; r < ROWS; r++) {
+        for (int c = 0; c < COLS; c++) {
+
+            const Tile& tile = grid[r][c];
+
+            // 1️⃣ inactive tile-ovi se IGNORIŠU
+            if (!tile.isActive())
+                continue;
+
+            // 2️⃣ samo vidljivi tile-ovi ulaze u hit-test
+            if (tile.getBounds().contains({x, y}))
+                return { r, c };
         }
     }
 
-    // graveyard levo
-    graveyard.setSize({pxTileW, pxTileH});
-    graveyard.setPosition({offsetX, boardStartY});
-
-    // deck desno
-    float deckX = boardStartX + boardWidth + pxSpacing;
-    deck.setSize({pxTileW, pxTileH});
-    deck.setPosition({deckX, boardStartY});
+    return { -1, -1 }; // ništa kliknuto
 }
 
-void Board::draw(sf::RenderWindow& window)
+void Board::cleanupDeadCards() {
+    for (int r = 0; r < ROWS; r++)
+        for (int c = 0; c < COLS; c++)
+            grid[r][c].cleanupDeadCards();
+}
+
+bool Board::handleClick(int mouseX, int mouseY)
 {
-    window.draw(windowBackground);
-    window.draw(graveyard);
-    window.draw(deck);
+    auto [row, col] = getTileAtPosition(
+        static_cast<float>(mouseX),
+        static_cast<float>(mouseY)
+    );
 
-    for (auto& t : tiles)
-        window.draw(t);
-}
-
-
-
-
-
-void Board::handleClick(int x, int y)
-{
-    // primer koji tile se kliknuo
-    for (int i = 0; i < tiles.size(); i++)
-    {
-        if (tiles[i].getGlobalBounds().contains(sf::Vector2f(x, y)))
-            std::cout << "Kliknut tile " << i << "\n";
-    }
-}
-
-bool Board::isValidIndex(int index) const {
-    return index >= 0 && index < rows * cols;
-}
-
-bool Board::hasCardAt(int index) const {
-    if (!isValidIndex(index)) return false;
-    return boardCards[index] != nullptr;
-}
-
-
-void Board::damagePlayer(Owner attacker, int damage) {
-    std::cout
-        << "[PLAYER HIT] attacker="
-        << (attacker == Owner::Player1 ? "Player1" : "Player2")
-        << " damage=" << damage
-        << "\n";
-
-    if (attacker == Owner::Player1) {
-        // Player1 napada → strada Player2
-        player2.takeDamage(damage);
-        std::cout
-            << "  -> Player2 HP = "
-            << player2.getHP()
-            << "\n";
-    } else {
-        // Player2 napada → strada Player1
-        player1.takeDamage(damage);
-        std::cout
-            << "  -> Player1 HP = "
-            << player1.getHP()
-            << "\n";
-    }
-}
-
-bool Board::isTopSide(int index) const {
-}
-
-
-// get indexa celije u boardu
-int Board::getTileIndexAt(int x, int y)
-{
-    for (int i = 0; i < (int)tiles.size(); ++i) {
-        if (tiles[i].getGlobalBounds().contains(sf::Vector2f((float)x, (float)y)))
-            return i;
-    }
-    return -1;
-}
-
-
-
-
-
-// postavi kartu na polje koje postoji i vec nema kartu
-bool Board::placeCardAt(int tileIndex, std::shared_ptr<CardBoard> card)
-{
-
-    std::cout
-    << "[PLACE TRY] tile=" << tileIndex
-    << " cardOwner=" << (card->getOwner() == Owner::Player1 ? "Player1" : "Player2")
-    << " tileOwner=" << (getTileOwner(tileIndex) == Owner::Player1 ? "Player1" : "Player2")
-    << " isLeech="
-    << (card->getAttackType() == AttackType::Pijavica ||
-        card->getAttackType() == AttackType::Pijavica_Special ? "YES" : "NO")
-    << "\n";
-
-
-
-    std::cout
- << "[DEBUG] tile=" << tileIndex
- << " tileOwner=" << (getTileOwner(tileIndex) == Owner::Player1 ? "P1" : "P2")
- << " cardOwner=" << (card->getOwner() == Owner::Player1 ? "P1" :
-                      card->getOwner() == Owner::Player2 ? "P2" : "NONE")
- << "\n";
-
-
-
-
-    if (tileIndex < 0 || tileIndex >= (int)boardCards.size())
-        return false;
-    if (boardCards[tileIndex])
+    if (row == -1)
         return false;
 
-    Owner tileOwner = getTileOwner(tileIndex);
-    Owner cardOwner = card->getOwner();
-
-    bool isLeech = card->getAttackType() == AttackType::Pijavica || card->getAttackType() == AttackType::Pijavica_Special;
-
-    bool isJelepeno = card->getAttackType() == AttackType::Jelepeno;
-
-
-    if (!isJelepeno)
-    {
-        if (!isLeech && tileOwner != cardOwner) {
-            std::cout << "Ne mozes staviti kartu na protivnicko polje!\n";
-            return false;
-        }
-        if (isLeech && tileOwner == cardOwner) {
-            std::cout << "Ne mozes da stavis pijavicu na svoje tile-ove.\n";
-            return false;
-        }
-    }
-
-    card->tileIndex = tileIndex;
-    boardCards[tileIndex] = card;
-
-    fitCardToTile(card, tileIndex);
+    std::cout << "Kliknut tile: (" << row << ", " << col << ")\n";
     return true;
 }
 
 
-
-
-
-
-Owner Board::getTileOwner(int tileIndex) const {
-    int half = boardCards.size() / 2;
-    return (tileIndex < half) ? Owner::Player1 : Owner::Player2;
-}
-
-
-
-
-void Board::fitCardToTile(const std::shared_ptr<CardBoard>& card, int tileIndex)
+void Board::updateHover(int mouseX, int mouseY)
 {
-    if (!card) return;
-
-    const auto& tile = tiles[tileIndex];
-
-    // pozicija
-    card->setSpritePosition(
-        tile.getPosition().x,
-        tile.getPosition().y
-    );
-
-    // scale
-    sf::Sprite& sprite = card->getSprite();
-    sf::FloatRect bounds = sprite.getLocalBounds();
-
-    sprite.setScale({
-        tile.getSize().x / bounds.size.x,
-        tile.getSize().y / bounds.size.y
-    });
-}
-
-
-
-// nacrtaj karte na boardu
-void Board::drawBoardCards(sf::RenderWindow& window,
-                           const std::shared_ptr<CardBoard>& selected)
-{
-    for (auto& cb : boardCards)
+    for (int r = 0; r < ROWS; r++)
     {
-        if (!cb) continue;
-
-        // 1️⃣ reset
-        cb->resetVisuals();
-
-        // 2️⃣ ako je selektovana → potamni
-        if (cb == selected)
+        for (int c = 0; c < COLS; c++)
         {
-            cb->setBrightness(false); // potamni
-        }
+            Tile& tile = grid[r][c];
 
-        // 3️⃣ draw
-        cb->draw(window);
+            if (!tile.isActive())
+            {
+                tile.setHovered(false);
+                continue;
+            }
 
-        // 4️⃣ dodatni vizuel (border)
-        if (cb == selected)
-        {
-            sf::FloatRect b = cb->getBounds();
-            sf::RectangleShape r;
-            r.setPosition({b.position.x - 3.f, b.position.y - 3.f});
-            r.setSize({b.size.x + 6.f, b.size.y + 6.f});
-            r.setFillColor(sf::Color::Transparent);
-            r.setOutlineThickness(3.f);
-            r.setOutlineColor(sf::Color::Green);
-            window.draw(r);
+            bool isHover =
+                tile.getBounds().contains(
+                    {static_cast<float>(mouseX),
+                    static_cast<float>(mouseY)}
+                );
+
+            tile.setHovered(isHover);
         }
     }
 }
 
 
+bool Board::placeCard(int row, int col, std::shared_ptr<Card> card)
+{
+    if (!card)
+        return false;
 
+    if (!isValidPosition(row, col))
+        return false;
 
+    Tile& tile = grid[row][col];
 
-std::shared_ptr<CardBoard> Board::getCardAt(int tileIndex) {
-    if (tileIndex < 0 || tileIndex >= boardCards.size()) return nullptr;
-    return boardCards[tileIndex];
+    // debug (opciono, ali korisno)
+    std::cout
+        << "[PLACE TRY] row=" << row
+        << " col=" << col
+        << " cardOwner="
+        << (card->getOwner() == Owner::Player1 ? "P1" :
+            card->getOwner() == Owner::Player2 ? "P2" : "NONE")
+        << " tileOwner="
+        << (tile.getOwner() == Owner::Player1 ? "P1" :
+            tile.getOwner() == Owner::Player2 ? "P2" : "NONE")
+        << "\n";
+
+    if (!tile.placeCard(card))
+    {
+        std::cout << "❌ Tile rejected card placement\n";
+        return false;
+    }
+
+    return true;
 }
 
 
-
-
-std::shared_ptr<CardBoard> Board::removeCardAt(int tileIndex)
-{
-    if (tileIndex < 0 || tileIndex >= (int)boardCards.size())
+std::shared_ptr<Card> Board::removeTopCard(int row, int col) {
+    if (!isValidPosition(row, col))
         return nullptr;
 
-    auto card = boardCards[tileIndex];
-    boardCards[tileIndex].reset();
-
-    return card;
+    return grid[row][col].removeTopCard();
 }
 
-void Board::cleanupDeadCards() {
-    for (int i = 0; i < (int)boardCards.size(); ++i) {
-        auto& card = boardCards[i];
-        if (card && card->getHP() <= 0) {
+int Board::getNextActiveRow(int fromRow, Owner attacker) const
+{
+    int step = (attacker == Owner::Player1) ? 1 : -1;
+    int r = fromRow + step;
 
-            card.reset();
-        }
+    while (r >= 0 && r < ROWS) {
+        if (grid[r][0].isActive())
+            return r;
+        r += step;
     }
+
+    return -1;
+}
+int Board::getLeftColumn(int col) const
+{
+    if (col <= 0)
+        return -1;
+    return col - 1;
+}
+
+int Board::getRightColumn(int col) const
+{
+    if (col >= COLS - 1)
+        return -1;
+    return col + 1;
+}
+
+Tile* Board::getNextTile(int row, int col)
+{
+    if (!isValidPosition(row, col))
+        return nullptr;
+
+    Owner tileOwner = grid[row][col].getOwner();
+
+    int dir = 0;
+    if (tileOwner == Owner::Player1)
+        dir = +1;
+    else if (tileOwner == Owner::Player2)
+        dir = -1;
+    else
+        return nullptr;
+
+    int nextRow = row + dir;
+
+    if (!isValidPosition(nextRow, col))
+        return nullptr;
+
+    return &grid[nextRow][col];
+}
+
+Tile* Board::getNextTile(int row, int col, Owner directionOwner)
+{
+    if (!isValidPosition(row, col))
+        return nullptr;
+
+    int dir = 0;
+    if (directionOwner == Owner::Player1)
+        dir = +1;
+    else if (directionOwner == Owner::Player2)
+        dir = -1;
+    else
+        return nullptr;
+
+    int nextRow = row + dir;
+
+    if (!isValidPosition(nextRow, col))
+        return nullptr;
+
+    return &grid[nextRow][col];
+}
+
+
+std::vector<std::shared_ptr<Card>>
+Board::getCardsInRangeFrom(int startRow, int startCol, int range, bool enemyOnly)
+{
+    std::vector<std::shared_ptr<Card>> result;
+
+    if (!isValidPosition(startRow, startCol))
+        return result;
+
+    Owner originOwner = grid[startRow][startCol].getOwner();
+
+    int dir = 0;
+    if (originOwner == Owner::Player1)
+        dir = +1;
+    else if (originOwner == Owner::Player2)
+        dir = -1;
+    else
+        return result;
+
+    for (int step = 1; step <= range; ++step)
+    {
+        int r = startRow + step * dir;
+        int c = startCol;
+
+        if (!isValidPosition(r, c))
+            break;
+
+        Tile& tile = grid[r][c];
+
+        if (!tile.isActive())
+            continue;
+
+        if (tile.empty())
+            continue;
+
+        if (enemyOnly && tile.getOwner() == originOwner)
+            continue;
+
+        auto target = tile.getAttackTarget();
+        if (target)
+            result.push_back(target);
+    }
+
+    return result;
+}
+
+bool Board::getTargetPosition(
+    int row,
+    int col,
+    Direction dir,
+    int& outRow,
+    int& outCol
+) const
+{
+    if (!isValidPosition(row, col))
+        return false;
+
+    outRow = row;
+    outCol = col;
+
+    Owner owner = grid[row][col].getOwner();
+
+    switch (dir)
+    {
+        case Direction::Forward:
+            if (owner == Owner::Player1) outRow++;
+            else if (owner == Owner::Player2) outRow--;
+            else return false;
+            break;
+
+        case Direction::Backward:
+            if (owner == Owner::Player1) outRow--;
+            else if (owner == Owner::Player2) outRow++;
+            else return false;
+            break;
+
+        case Direction::Left:
+            outCol--;
+            break;
+
+        case Direction::Right:
+            outCol++;
+            break;
+    }
+
+    return isValidPosition(outRow, outCol);
 }
 
 
 
-/*
-#include "Board.h"
-#include <iostream>
 
-Board::Board() {
-    // --- window background ---
-    if (!windowBackgroundTexture.loadFromFile("assets/backgroundtexture.png")) {
-        std::cerr << "Ne mogu da ucitam window_background.png!\n";
-    }
-    windowBackground.setSize({1320.f, 1080.f});
-    windowBackground.setPosition({0.f, 0.f});
-    windowBackground.setTexture(&windowBackgroundTexture);
-
-    // --- tile texture ---
-    if (!tileTexture.loadFromFile("assets/tiletexture.png")) {
-        std::cerr << "Ne mogu da ucitam tiletexture.png!\n";
-    }
-
-    // Board pozicija
-    float boardX = sideMargin + tileWidth + tileSpacing; // levo od board-a je graveyard
-    float boardY = topMargin;
-
-    tiles.reserve(rows * cols);
-
-    // Kreiranje board tiles
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-            sf::RectangleShape tile;
-            tile.setSize({ tileWidth, tileHeight });
-
-            float x = boardX + c * (tileWidth + tileSpacing);
-            float y = boardY + r * (tileHeight + tileSpacing);
-            tile.setPosition({ x, y });
-
-            tile.setTexture(&tileTexture); // postavljamo istu sliku za sve
-
-            tiles.push_back(tile);
-        }
-    }
-
-    // Graveyard (levo)
-    graveyard.setSize({ tileWidth, tileHeight });
-    graveyard.setFillColor(sf::Color(100, 100, 100));
-    graveyard.setPosition({ sideMargin, boardY });
-
-    // Deck (desno)
-    deck.setSize({ tileWidth, tileHeight });
-    deck.setFillColor(sf::Color(150, 150, 150));
-    deck.setPosition({ boardX + cols * tileWidth + (cols - 1) * tileSpacing + tileSpacing, boardY });
-}
-
-void Board::draw(sf::RenderWindow& window) {
-    // prvo pozadina celog prozora
+// ---------- Draw ----------
+void Board::draw(sf::RenderWindow& window)
+{
     window.draw(windowBackground);
-
-    // potom tiles
-    for (auto& t : tiles)
-        window.draw(t);
-
-    // potom deck i graveyard
-    window.draw(deck);
-    window.draw(graveyard);
+    for (int r = 0; r < ROWS; r++)
+        for (int c = 0; c < COLS; c++)
+            grid[r][c].draw(window);
 }
 
-void Board::handleClick(int mouseX, int mouseY) {
-    float boardX = sideMargin + tileWidth + tileSpacing;
-    float boardY = topMargin;
 
-    mouseX -= boardX;
-    mouseY -= boardY;
 
-    if (mouseX < 0 || mouseY < 0) return;
 
-    int col = mouseX / (tileWidth + tileSpacing);
-    int row = mouseY / (tileHeight + tileSpacing);
 
-    if (col >= cols || row >= rows) return;
 
-    int index = row * cols + col;
-    std::cout << "Selected tile: " << index << std::endl;
 
-    for (int i = 0; i < tiles.size(); i++) {
-        if (i == index)
-            tiles[i].setFillColor(sf::Color(100, 100, 255));
-        else {
-            if (i / cols < 2)
-                tiles[i].setFillColor(sf::Color(255, 0, 0)); // samo vizuelni test
-            else
-                tiles[i].setFillColor(sf::Color(0, 255, 0));
+
+
+sf::Vector2f Board::getDeckPosition() const {
+    // desno od boarda, u visini prvog reda
+    const Tile& t = grid[0][COLS - 1];
+    auto pos = t.getPosition();
+    return { pos.x + t.getSize().x + winW * 0.02f, pos.y };
+}
+
+
+
+sf::FloatRect Board::getDeckBounds() const {
+    auto pos = getDeckPosition();
+    float w = winW * 0.08f;
+    float h = w * 1.4f;
+
+    return sf::FloatRect(
+        sf::Vector2f(pos.x, pos.y),
+        sf::Vector2f(w, h)
+    );
+}
+
+sf::FloatRect Board::getGraveyardBounds() const {
+    const Tile& t = grid[0][0];
+    auto pos = t.getPosition();
+    float w = winW * 0.08f;
+    float h = w * 1.4f;
+
+    return sf::FloatRect(
+        sf::Vector2f(pos.x - w - winW * 0.02f, pos.y),
+        sf::Vector2f(w, h)
+    );
+}
+
+
+
+
+
+
+void Board::drawBoardCards(
+    sf::RenderWindow& window,
+    const std::shared_ptr<Card>& selected)
+{
+    for (int r = 0; r < ROWS; r++)
+    {
+        for (int c = 0; c < COLS; c++)
+        {
+            Tile& tile = grid[r][c];
+
+            if (!tile.isActive())
+                continue;
+
+            auto card = tile.getAttackTarget();
+            // ili getTopCard() ako imaš stack
+
+            if (!card)
+                continue;
+
+            // 1️⃣ reset visuals
+            card->resetVisuals();
+
+            // 2️⃣ selektovana karta → potamni
+            if (card == selected)
+            {
+                card->setBrightness(false);
+            }
+
+            // 3️⃣ draw karta
+            card->draw(window);
+
+            // 4️⃣ border za selektovanu
+            if (card == selected)
+            {
+                sf::FloatRect b = card->getBounds();
+
+                sf::RectangleShape border;
+                border.setPosition(
+                    sf::Vector2f(b.position.x - 3.f, b.position.y - 3.f)
+                );
+                border.setSize(
+                    sf::Vector2f(b.size.x + 6.f, b.size.y + 6.f)
+                );
+                border.setFillColor(sf::Color::Transparent);
+                border.setOutlineThickness(3.f);
+                border.setOutlineColor(sf::Color::Green);
+
+                window.draw(border);
+            }
         }
     }
 }
-*/
+
+
+
+Tile& Board::getTile(int row, int col)
+{
+    return grid[row][col];
+}
+
+const Tile& Board::getTile(int row, int col) const
+{
+    return grid[row][col];
+}
+
+
+
+bool Board::isValidPosition(int row, int col) const
+{
+    return row >= 0 && row < ROWS &&
+           col >= 0 && col < COLS;
+}
+
+
+
+
+void Board::damagePlayer(Owner attacker, int damage)
+{
+    if (attacker == Owner::Player1)
+        player2.takeDamage(damage);
+    else if (attacker == Owner::Player2)
+        player1.takeDamage(damage);
+}

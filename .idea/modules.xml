@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/sfmlproject.iml" filepath="$PROJECT_DIR$/.idea/sfmlproject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/BurnBook.iml" filepath="$PROJECT_DIR$/.idea/BurnBook.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/burnbookalfa.iml" filepath="$PROJECT_DIR$/.idea/burnbookalfa.iml" />
     </modules>
   </component>
 </project>

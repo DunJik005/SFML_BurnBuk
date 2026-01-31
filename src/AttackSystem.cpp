@@ -1,44 +1,47 @@
 #include "AttackSystem.h"
 
 
-void AttackSystem::resolveAttack(Board& board, int attackerIndex) {
-    auto attackerPtr = board.getCardAt(attackerIndex);
-    if (!attackerPtr) return;
-    if (attackerPtr->getHP() <= 0) return;
+void AttackSystem::resolveAttack(Board& board, int row, int col)
+{
+    if (!board.isValidPosition(row, col))
+        return;
+
+    Tile& originTile = board.getTile(row, col);
+
+    auto attackerPtr = originTile.getAttackTarget();
+    if (!attackerPtr)
+        return;
+
+    if (attackerPtr->getHP() <= 0)
+        return;
 
     Card& attacker = *attackerPtr;
 
     std::cout
-        << "[ATTACK] Card at tile " << attackerIndex
-        << " | HP=" << attacker.getHP()
-        << " | DMG=" << attacker.getDamage()
-        << " | BASE=" << (int) attacker.getBaseAttack()
-        << " | MODS=" << (uint32_t) attacker.getModifiers()
-        //<< " | Type=" << (int)attacker.getAttackType()
+        << "[ATTACK] (" << row << "," << col << ") "
+        << "HP=" << attacker.getHP()
+        << " DMG=" << attacker.getDamage()
+        << " BASE=" << (int)attacker.getBaseAttack()
+        << " MODS=" << (uint32_t)attacker.getModifiers()
         << "\n";
 
-
-
-    switch (attacker.getBaseAttack()) {
+    switch (attacker.getBaseAttack())
+    {
         case BaseAttack::Chomper:
-            linearAttack(board, attacker, attackerIndex);
-            break;
-
         case BaseAttack::Peashooter:
-            linearAttack(board, attacker, attackerIndex);
-            break;
-
         case BaseAttack::Catapult:
-            linearAttack(board, attacker, attackerIndex);
-            break;
-
         case BaseAttack::Nut:
-            attackNut(board, attackerIndex);
+            linearAttack(board, row, col);
+            break;
+/*
+        case BaseAttack::Nut:
+            attackNut(board, row, col);
             break;
 
         case BaseAttack::Jelepeno:
-            attackJelepeno(board, attackerIndex);
+            attackJelepeno(board, row, col);
             break;
+            */
 
         default:
             break;
@@ -73,9 +76,15 @@ bool AttackSystem::hasModifier(AttackModifier mods, AttackModifier flag) {
 
 
 
+void AttackSystem::linearAttack(Board& board, int row, int col)
+{
+    Tile& originTile = board.getTile(row, col);
+    auto attackerPtr = originTile.topCard();
+    if (!attackerPtr)
+        return;
 
-void AttackSystem::linearAttack(Board& board, Card& attacker, int index) {
-    int dir   = getDirection(attacker);
+    Card& attacker = *attackerPtr;
+
     int range = getRange(attacker.getBaseAttack());
 
     bool laser   = hasModifier(attacker.getModifiers(), AttackModifier::Laser);
@@ -85,86 +94,74 @@ void AttackSystem::linearAttack(Board& board, Card& attacker, int index) {
     bool zlatni  = hasModifier(attacker.getModifiers(), AttackModifier::Zlatni);
 
     int hits = rapid ? attacker.getHitCount() : 1;
-    const int cols = 4;
 
-    // kolone koje se gadjaju
-    std::vector<int> columnOffsets = { 0 };
-    if (wide) {
-        columnOffsets.push_back(-1);
-        columnOffsets.push_back(+1);
+    // kolone koje gadjamo
+    std::vector<int> cols = { col };
+    if (wide)
+    {
+        int l = board.getLeftColumn(col);
+        int r = board.getRightColumn(col);
+        if (l != -1)
+            cols.push_back(l);
+        if (r != -1)
+            cols.push_back(r);
     }
 
-    for (int h = 0; h < hits; h++) {
+    for (int h = 0; h < hits; h++)
+    {
+        for (int attackCol : cols)
+        {
+            std::vector<int> rowsInRange;
 
-        for (int colOffset : columnOffsets) {
-
-            int baseCol = index % cols;
-            int newCol  = baseCol + colOffset;
-            if (newCol < 0 || newCol >= cols)
-                continue;
-
-            // =============================
-            // 1. sakupi sve tile-ove u range-u
-            // =============================
-            std::vector<int> tilesInRange;
-            for (int step = 1; step <= range; step++) {
-                int t = index + dir * step + colOffset;
-                if (board.isValidIndex(t))
-                    tilesInRange.push_back(t);
+            int currentRow = row;
+            for (int step = 0; step < range; step++)
+            {
+                currentRow = board.getNextActiveRow(currentRow, attacker.getOwner());
+                if (currentRow == -1)
+                    break;
+                rowsInRange.push_back(currentRow);
             }
 
             if (reverse)
-                std::reverse(tilesInRange.begin(), tilesInRange.end());
+                std::reverse(rowsInRange.begin(), rowsInRange.end());
 
-            // =============================
-            // 2. traži PRVU kartu
-            // =============================
             bool hitCard = false;
 
-            for (int t : tilesInRange) {
-                auto target = board.getCardAt(t);
-                if (!target) {
-                    if (laser) {
-                        // laser udara playera i nastavlja
-                        std::cout << "    No card at " << t << " -> hits PLAYER (laser)\n";
+            for (int r : rowsInRange)
+            {
+                Tile& tile = board.getTile(r, attackCol);
+
+                if (tile.empty())
+                {
+                    if (laser)
                         board.damagePlayer(attacker.getOwner(), attacker.getDamage());
-                        continue; // laser nastavlja dalje kroz range
-                    } else {
-                        // običan napad samo preskače tile
-                        continue;
-                    }
+                    continue;
                 }
 
+                auto target = tile.getAttackTarget();
+                if (!target)
+                    continue;
 
                 int hpBefore = target->getHP();
                 target->setHP(hpBefore - attacker.getDamage());
 
                 std::cout
-                    << "    Hit CARD at " << t
-                    << " HP " << hpBefore
-                    << " -> " << target->getHP() << "\n";
+                    << "    Hit card at (" << r << "," << attackCol
+                    << ") HP " << hpBefore << " -> " << target->getHP() << "\n";
 
                 if (zlatni && target->getHP() < 0)
                 {
-                    int excess = -target->getHP();
-                    board.damagePlayer(attacker.getOwner(), excess);
+                    board.damagePlayer(attacker.getOwner(), -target->getHP());
                     target->setHP(0);
                 }
 
                 hitCard = true;
                 if (!laser)
-                    break; // karta ima prioritet
+                    break;
             }
 
-            // =============================
-            // 3. ako NIJEDNA karta -> player
-            // =============================
             if (!hitCard)
-            {
-                std::cout
-                    << "    No cards in column "<< newCol << "-> hits PLAYER\n";
                 board.damagePlayer(attacker.getOwner(), attacker.getDamage());
-            }
         }
     }
 }
@@ -197,7 +194,7 @@ void AttackSystem::linearAttack(Board& board, Card& attacker, int index) {
 
 
 
-
+/*
 
 
 void AttackSystem::attackChomper(Board &board, int index) {
@@ -329,4 +326,4 @@ void AttackSystem::attackJelepeno(Board &board, int index) {
     // karta se odmah uklanja sa boarda
     board.removeCardAt(index);
     std::cout << "  Jelepeno card at tile " << index << " removed after AoE\n";
-}
+}*/
