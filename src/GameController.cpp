@@ -1,7 +1,3 @@
-//
-// Created by lazab on 12/22/2025.
-//
-
 #include "GameController.h"
 
 
@@ -37,14 +33,10 @@ void GameController::sendHandCardToGraveyard(Hand &hand, Graveyard &graveyard, s
     card.reset();
 }
 
-void GameController::sendBoardCardToGraveyard(Board &board, Graveyard &graveyard, std::shared_ptr<CardBoard> &card) {
+void GameController::sendBoardCardToGraveyard(Tile& tile, Graveyard &graveyard, std::shared_ptr<Card> &card) {
     if (!card) return;
-    int tile = card->tileIndex;
-    auto removed = board.removeCardAt(tile);
-
-    if (removed)
-        graveyard.addCard(removed);
-
+    if (tile.removeTopCard())
+        graveyard.addCard(card);
     card.reset();
 
 }
@@ -52,9 +44,79 @@ void GameController::sendBoardCardToGraveyard(Board &board, Graveyard &graveyard
 
 
 Owner GameController::getCurrentPlayer() const {
-    switch (currentPhase) {
+    switch (currentPhase)
+    {
         case GamePhase::Player1Place: return Owner::Player1;
         case GamePhase::Player2Place: return Owner::Player2;
         default: return Owner::Player1; // ili None
     }
+}
+
+
+void GameController::updateHandsState(Hand& p1Hand, Hand& p2Hand)
+{
+    Owner current = getCurrentPlayer();
+
+    if (current == Owner::Player1)
+    {
+        p1Hand.setActive(true);
+        p2Hand.setActive(false);
+
+        p1Hand.setVisibleOwner(Owner::Player1);
+        p2Hand.setVisibleOwner(Owner::Player1);
+    }
+    else
+    {
+        p2Hand.setActive(true);
+        p1Hand.setActive(false);
+
+        p2Hand.setVisibleOwner(Owner::Player2);
+        p1Hand.setVisibleOwner(Owner::Player2);
+    }
+}
+
+void GameController::returnTopCardToHand(
+    Tile& tile,
+    Hand& hand,
+    float windowWidth,
+    float windowHeight
+)
+{
+
+
+    Player& currentPlayer =
+        (getCurrentPlayer() == Owner::Player1)
+        ? player1
+        : player2;
+    // 1. Pravila
+
+    if (!tile.canReturnCard(getCurrentPlayer()))
+        return;
+
+    // 2. Skini kartu sa tile-a
+    auto card = tile.returnTopCardToHand();
+    if (!card)
+        return;
+
+    currentPlayer.addElixir(card->getCost());
+    std::cout << "Card elixir refund: " << card->getCost() << std::endl;
+
+    // 3. ISTA LOGIKA KAO U DECK-u
+    auto handCard = std::make_shared<CardHand>(
+        card->getName(),
+        *const_cast<sf::Texture*>(card->getTexture()),
+        card->getHP(),
+        card->getDamage(),
+        card->getCost(),
+        card->getRarity(),
+        card->getBaseAttack(),
+        card->getModifiers(),
+        card->getHitCount(),
+        card->getDescription()
+    );
+    handCard->setOwner(card->getOwner());
+
+
+    // 4. Dodaj u hand (sa width/height)
+    hand.addCard(handCard, windowWidth, windowHeight);
 }

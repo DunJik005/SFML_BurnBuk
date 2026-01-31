@@ -1,7 +1,6 @@
 //
 // Created by Teodora Mladenovic on 3. 1. 2026..
 //
-
 #include "CardRender.h"
 #include <iostream>
 #include "NeutralTexture.h"
@@ -33,7 +32,6 @@ sf::Texture& CardRenderer::getStarTexture() {
     }
     return tex;
 }
-
 // ---------- ctor ----------
 
 CardRenderer::CardRenderer()
@@ -42,16 +40,25 @@ CardRenderer::CardRenderer()
       starSprite(getStarTexture()),
       statsText(getFont()),
       nameText(getFont()),
-      descriptionText(getFont())
+      descriptionText(getFont()),
+      descriptionBox(getFont())
 {
     statsText.setFillColor(sf::Color::Black);
     descriptionText.setFillColor(sf::Color::Black);
     descriptionText.setLineSpacing(1.2f);
     nameText.setFillColor(sf::Color::Black);
     starSprite.setScale({starsScaleFactor, starsScaleFactor});
+    descriptionBox.setCharacterSize(descCharSize);
+    descriptionBox.setVisibleLines(5);
 }
 
 // ---------- api ----------
+void CardRenderer::scrollDescription(float delta) {
+    descriptionBox.scroll(delta * scrollSpeed);
+}
+void CardRenderer::update(float dt) {
+    descriptionBox.update(dt);
+}
 
 void CardRenderer::setCard(const Card& c) {
     card = &c;
@@ -64,9 +71,14 @@ void CardRenderer::setCard(const Card& c) {
         "HP: " + std::to_string(card->getHP()) +
         "   DMG: " + std::to_string(card->getDamage())
     );
+    float padding = 100.f;
+    float cardWidth = frameSprite.getTexture().getSize().x;
 
-    descriptionText.setCharacterSize(128);
-    descriptionText.setString(card->getDescription());
+    float textBoxWidth = cardWidth - padding * 2.f;
+
+    descriptionBox.setBoxWidth(textBoxWidth);
+    descriptionBox.setText(card->getDescription());
+
     nameText.setCharacterSize(128);
     nameText.setString(card->getName());
 }
@@ -95,11 +107,13 @@ void CardRenderer::setPosition(sf::Vector2f pos) {
 
     statsText.setPosition(statsLocalPos);
 
-    descriptionText.setPosition({  padding,
-     frameSprite.getTexture().getSize().y - 550.f
+    nameText.setPosition({padding,  padding / 2.f});
+
+    descriptionBox.setPosition({
+    100.f,
+    frameSprite.getTexture().getSize().y - 520.f
 });
 
-    nameText.setPosition({padding,  padding/2.f});
 }
 
 // ---------- draw ----------
@@ -114,8 +128,8 @@ void CardRenderer::draw(sf::RenderTarget& target) const {
     target.draw(artSprite, states);
     target.draw(frameSprite, states);
     target.draw(statsText, states);
-    target.draw(descriptionText, states);
     target.draw(nameText, states);
+    descriptionBox.draw(target, states);
 
 
     int cost = card->getCost();

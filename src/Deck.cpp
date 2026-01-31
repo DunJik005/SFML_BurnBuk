@@ -13,18 +13,32 @@ Deck::Deck(CardDataBase& db)
         cards.push_back(c);
     }
 
-    if (!deckTexture.loadFromFile("assets/deckic.png")) {
+    if (!deckTexture.loadFromFile("assets/tiletexture.png")) {
         std::cerr << "Ne mogu da ucitam deckic.png\n";
     } else {
-        deckSprite.setTexture(deckTexture);
+        deckSprite.setTexture(deckTexture, true);
     }
 
     std::cout << "Deck ima " << cards.size() << " karata.\n";
 }
 
-void Deck::setPosition(float x, float y) {
+void Deck::setPosition(const Board& board, float yOffset)
+{
+    constexpr float TARGET_HEIGHT = 150.f;
+
+    auto texSize = deckTexture.getSize();
+    if (texSize.y == 0) return;
+
+    float scale = TARGET_HEIGHT / texSize.y;
+    deckSprite.setScale({scale, scale});
+
+    auto bounds = deckSprite.getLocalBounds();
+    deckSprite.setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
+    float x = board.getLeftEdge() - deckSprite.getGlobalBounds().size.x / 2.f - 80.f;
+    float y = board.getCenterY() + yOffset ;
     deckSprite.setPosition({x, y});
 }
+
 
 void Deck::draw(sf::RenderWindow& window) {
     window.draw(deckSprite);
@@ -35,9 +49,14 @@ bool Deck::contains(float x, float y) {
 }
 
 bool Deck::drawCardToHand(Hand& hand, float windowWidth, float windowHeight, Owner owner) {
-    if (cards.empty()) return false;
+    if (cards.empty())
+        return false;
 
-    int idx = rand() % cards.size();
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, cards.size() - 1);
+
+    int idx = dist(gen);  // random indeks
     auto card = cards[idx];
     cards.erase(cards.begin() + idx);
 
@@ -54,13 +73,7 @@ bool Deck::drawCardToHand(Hand& hand, float windowWidth, float windowHeight, Own
         card->getDescription()
     );
 
-    // Postavi owner odmah
     handCard->setOwner(owner);
-
-    std::cout << "[DEBUG] owner="
-          << (handCard->getOwner() == Owner::Player1 ? "Player1" : "Player2")
-          << "\n";
-
     hand.addCard(handCard, windowWidth, windowHeight);
     return true;
 }

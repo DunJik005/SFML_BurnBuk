@@ -9,10 +9,10 @@ void Hand::onResize(float windowWidth, float windowHeight) {
     /* OVDE CE DA SE MENJA BASEY PO ACTIVEU */
     float margin = windowHeight / 8.f;
 
-if (isActive)
-    baseY = windowHeight - margin;
-else
-    baseY = margin;
+    if (isActive)
+        baseY = windowHeight - margin;
+    else
+        baseY = margin;
 
 
     spacing = windowWidth * 0.15f;
@@ -65,12 +65,23 @@ std::shared_ptr<CardHand> Hand::handleClick(float x, float y)
 
 // ---------------- MODIFY ----------------
 
-void Hand::addCard(const std::shared_ptr<CardHand>& card, float windowWidth, float windowHeight)
+void Hand::addCard(const std::shared_ptr<CardHand>& card,
+                   float windowWidth,
+                   float windowHeight)
 {
+    // 1. SCALE – POSLE TEKSTURE
+    card->updateScale(windowWidth);
+
+    // 2. dodaj u hand
     cards.push_back(card);
-    baseY = windowHeight - windowWidth / 8.f;
+
+    // 3. ispravan baseY
+    baseY = windowHeight - windowHeight / 8.f;
+
+    // 4. layout
     recalcLayout(windowWidth);
 }
+
 
 void Hand::removeHand(const std::shared_ptr<CardHand>& card, float windowWidth)
 {

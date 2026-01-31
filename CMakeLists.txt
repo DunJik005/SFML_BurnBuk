@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.31)
-project(sfmlproject)
+project(burnbookalfa LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(sfmlproject
+add_executable(burnbookalfa
         src/main.cpp
         src/Card.cpp
         src/Board.cpp
@@ -19,8 +20,6 @@ add_executable(sfmlproject
         src/RarityFrame.h
         src/CardHand.cpp
         src/CardHand.h
-        src/CardBoard.cpp
-        src/CardBoard.h
         src/Hand.cpp
         src/Hand.h
         src/Deck.cpp
@@ -44,17 +43,24 @@ add_executable(sfmlproject
         src/CardDataBase.cpp
         src/CardDataBase.h
         src/CardRender.cpp
-        src/CardRender.h)
+        src/CardRender.h
+        src/Tile.cpp
+        src/Tile.h
+        src/Textbox.cpp
+        src/Textbox.h
+        src/InteractionController.cpp
+        src/InteractionController.h
+        src/TileOverlayRenderer.cpp
+        src/TileOverlayRenderer.h
+        src/ReturnButton.cpp
+        src/ReturnButton.h)
 
-set(SFML_STATIC_LIBRARIES TRUE)
-set(SFML_DIR C:/SFML/lib/cmake/SFML)
 
-include_directories(C:/SFML)
+find_package(SFML 3 COMPONENTS Graphics Window System Audio REQUIRED)
 
-find_package(SFML 3 COMPONENTS Graphics Window System REQUIRED)
-
-target_link_libraries(sfmlproject
+target_link_libraries(burnbookalfa
         SFML::Graphics
         SFML::Window
         SFML::System
+        SFML::Audio
 )

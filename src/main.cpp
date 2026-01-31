@@ -2,7 +2,6 @@
 #include "Board.h"
 #include "Card.h"
 #include "CardHand.h"
-#include "CardBoard.h"
 #include "Hand.h"
 #include "Deck.h"
 #include "Graveyard.h"
@@ -10,17 +9,26 @@
 #include "CardView.h"
 #include "TurnButtons.h"
 #include "GameController.h"
+#include "InteractionController.h"
 #include "CardDataBase.h"
 #include <iostream>
-
+#include <SFML/Audio.hpp>
 using namespace sf;
 
-
 int main() {
+    sf::Clock clock; //meri vreme za skrol
 
+    std::srand(static_cast<unsigned>(std::time(nullptr)));
+
+    sf::Music music;
+    if (!music.openFromFile("assets/music/POTC.ogg")) {
+        std::cout << "Muzika nije ucitana."<< std::endl;
+    }
+    music.play();
+    music.setLooping(true);
     RenderWindow window(
         //VideoMode({1820,1080}),
-        VideoMode({1344, 800}),
+        VideoMode({1000, 600}),
         "Tedzan uci",
         sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize
     );
@@ -33,6 +41,7 @@ int main() {
 
     Deck* activeDeck = nullptr;
 
+
     Player player1;
     Player player2;
 
@@ -44,15 +53,7 @@ int main() {
 
     GameController gameController(board, turnButtons, gameDeck, player1, player2);
 
-    // pravi se neka lokalna custom karta za test
-    sf::Texture cardTexture;
-    if (!cardTexture.loadFromFile("assets/cards/abortus.jpg"))
-    {
-        std::cerr << "Greska pri ucitavanju card texture!\n";
-    }
-
-
-    gameDeck.setPosition(board.getDeckPosition().x, board.getDeckPosition().y);
+    gameDeck.setPosition(board, -80.f);
 
 
     // pravi se hand objekat
@@ -65,7 +66,8 @@ int main() {
 
     //pravi se graveyard instanca i selected board karta za graveyard (na foru selectedCarda za hand)
     Graveyard graveyard;
-    std::shared_ptr<CardBoard> selectedBoardCard = nullptr;
+    graveyard.setPosition(board, 80);
+    std::shared_ptr<Card> selectedBoardCard = nullptr;
 
 
 // pravi se card view instanca
@@ -73,232 +75,146 @@ int main() {
     cardView.onResize(window.getSize().x, window.getSize().y);
 
 
+    InteractionController interaction;
+
     while (window.isOpen())
     {
+        // ===============================
+        // 1️⃣ UPDATE HAND STATE (GC)
+        // ===============================
+        gameController.updateHandsState(p1Hand, p2Hand);
 
+        Hand* activeHand =
+            (gameController.getCurrentPlayer() == Owner::Player1)
+            ? &p1Hand : &p2Hand;
 
-        Hand* activeHand = nullptr;
-        Hand* inactiveHand = nullptr;
+        Hand* inactiveHand =
+            (activeHand == &p1Hand) ? &p2Hand : &p1Hand;
 
-        switch (gameController.getCurrentPlayer()) {
-            case Owner::Player1:
-                activeHand   = &p1Hand;
-                inactiveHand = &p2Hand;
-                break;
-
-            case Owner::Player2:
-                activeHand   = &p2Hand;
-                inactiveHand = &p1Hand;
-                break;
-        }
-        activeHand->setActive(true);
-        inactiveHand->setActive(false);
-
-
-        activeHand->setVisibleOwner(gameController.getCurrentPlayer());
-
+        // ===============================
+        // 2️⃣ EVENT LOOP
+        // ===============================
         while (auto event = window.pollEvent())
         {
-            // Zatvaranje
-            if (event->is<Event::Closed>())
+            // --- CLOSE ---
+            if (event->is<sf::Event::Closed>())
                 window.close();
 
-            // Resize
-            if (event->is<Event::Resized>())
+            // --- SCROLL (CardView) ---
+            if (event->is<sf::Event::MouseWheelScrolled>())
             {
-                auto* e = event->getIf<Event::Resized>();
+                auto* e = event->getIf<sf::Event::MouseWheelScrolled>();
+                if (e->wheel == sf::Mouse::Wheel::Vertical)
+                    cardView.scrollDescription(e->delta);
+            }
+
+            // --- RESIZE ---
+            if (event->is<sf::Event::Resized>())
+            {
+                auto* e = event->getIf<sf::Event::Resized>();
+
                 board.onResize(e->size.x, e->size.y);
-                p1Hand.onResize(window.getSize().x, window.getSize().y);
-                p2Hand.onResize(window.getSize().x, window.getSize().y);
+                turnButtons.onResize(e->size.x, e->size.y);
 
+                gameDeck.setPosition(board, -80.f); // ✅ DODAJ OVO
+                graveyard.setPosition(board, +80.f); // ispod sredine
 
-                //resizovanje cardView karte
+                p1Hand.onResize(e->size.x, e->size.y);
+                p2Hand.onResize(e->size.x, e->size.y);
+
                 cardView.onResize(e->size.x, e->size.y);
 
-                // Ako želiš da ne rastegne sliku, vec viewport:
                 sf::View view(sf::FloatRect(
-                    sf::Vector2f(0.f, 0.f),
-                    sf::Vector2f(static_cast<float>(e->size.x),
-                 static_cast<float>(e->size.y))));
-
+                    {0.f, 0.f},
+                    {static_cast<float>(e->size.x),
+                    static_cast<float>(e->size.y)}
+                ));
                 window.setView(view);
             }
 
-            // Klik
-            if (event->is<Event::MouseButtonPressed>())
+            // --- HOVER ---
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            board.updateHover(mousePos.x, mousePos.y);
+
+            // --- MOUSE BUTTONS ---
+            if (event->is<sf::Event::MouseButtonPressed>())
             {
-                auto* e = event->getIf<Event::MouseButtonPressed>();
+                auto* e = event->getIf<sf::Event::MouseButtonPressed>();
+                cardView.hide();
+
+                // LEFT CLICK
                 if (e->button == sf::Mouse::Button::Left)
                 {
-                    int mouseX = e->position.x;
-                    int mouseY = e->position.y;
-
+                    // Turn buttons (ostaje isto)
                     Owner current = gameController.getCurrentPlayer();
 
-                    if (current == Owner::Player1) {
-                        if (turnButtons.handleClick(mouseX, mouseY, true)) {
-                            gameController.setPlayer1Done(true);
-                            gameController.update();
-                            continue;
-                        }
-                    }
-                    else if (current == Owner::Player2) {
-                        if (turnButtons.handleClick(mouseX, mouseY, false)) {
-                            gameController.setPlayer2Done(true);
-                            gameController.update();
-                            continue;
-                        }
-                    }
-
-
-                    // klik na deck
-                    if (board.getDeckBounds().contains(sf::Vector2f((float)mouseX, (float)mouseY))) {
-                        gameController.drawCardForCurrentPlayer(*activeHand, window.getSize().x, window.getSize().y);
+                    if (current == Owner::Player1 &&
+                        turnButtons.handleClick(e->position.x, e->position.y, true))
+                    {
+                        gameController.setPlayer1Done(true);
+                        gameController.update();
                         continue;
                     }
 
-                    // klik na hand provera
-                    auto maybe = activeHand->handleClick((float)mouseX, (float)mouseY);
-                    if (maybe)
+                    if (current == Owner::Player2 &&
+                        turnButtons.handleClick(e->position.x, e->position.y, false))
                     {
-                        selectedCard = maybe;
-                        selectedBoardCard = nullptr;
+                        gameController.setPlayer2Done(true);
+                        gameController.update();
                         continue;
                     }
 
+                    interaction.handleLeftClick(
+                    e->position.x,
+                    e->position.y,
+                    board,
+                    gameDeck,
+                    *activeHand,
+                    gameController,
+                    graveyard,
+                    player1,
+                    player2,
+                    window.getSize().x,
+                    window.getSize().y
+                );
 
-
-
-                    //    CLICK NA TILE HANDLER I OSTALO
-                    int tile = board.getTileIndexAt(mouseX, mouseY);
-                    if (tile >= 0) {
-                        auto boardCard = board.getCardAt(tile);
-                        if (boardCard) {
-                            selectedBoardCard = boardCard;
-                            selectedCard = nullptr;
-                            continue;
-                        }
-
-                        if (selectedCard) {
-                            const sf::Texture* texPtr = &selectedCard->getSprite().getTexture();
-                            sf::Texture* texNonConst = nullptr;
-
-                            if (texPtr) {
-                                // const_cast je bezbedan *samo* ako ta texture zaista živi negde (npr. u main-u)
-                                texNonConst = const_cast<sf::Texture*>(texPtr);
-                            } else {
-                                // fallback na neutralnu teksturu ako iz nekog razloga nema texture
-                                //texNonConst = &getNeutralTexture();
-                                std::cout << "Nema teksture\n";
-                            }
-
-
-                            // napravi CardBoard koristeći postojeći konstruktor (nasleđeni iz Card)
-                            auto cb = std::make_shared<CardBoard>(
-                                selectedCard->getName(),
-                                *texNonConst,
-                                selectedCard->getHP(),
-                                selectedCard->getDamage(),
-                                selectedCard->getCost(),
-                                selectedCard->getRarity(),
-                                selectedCard->getBaseAttack(),
-                                selectedCard->getModifiers(),
-                                selectedCard->getHitCount(),
-                                selectedCard->getDescription()
-                            );
-                            cb->setOwner(gameController.getCurrentPlayer());
-                            // stavi ownera u cardboard trenutni
-
-
-                            //  postavljanje karte na board
-                            bool ok = board.placeCardAt(tile, cb);
-                            if (ok) {
-                                activeHand->removeHand(selectedCard, window.getSize().x);
-                                //cardView.show(*cb);
-                                selectedCard = nullptr;
-                                std::cout << "Postavio si kartu na board:" << cb->getName() << std::endl;
-                            }
-                            else
-                                std::cout << "Tile vec na sebi ima kartu\n";
-
-                            continue;
-                        }
-                    }
-
-
-
-                    // ===== HAND → GRAVEYARD =====
-                    if (board.getGraveyardBounds().contains(sf::Vector2f((float)mouseX, (float)mouseY)))
-                    {
-                        if (selectedCard)
-                        {
-                            std::string name = selectedCard->getName();
-
-                            gameController.sendHandCardToGraveyard(*activeHand, graveyard, selectedCard, window.getSize().x);
-
-                            std::cout << "Poslata je karta iz handa na graveyard: "
-                                      << name << std::endl;
-
-                            continue;
-                        }
-
-
-
-                        // ===== BOARD → GRAVEYARD =====
-                        if (selectedBoardCard)
-                        {
-                            std::string name = selectedBoardCard->getName();
-
-                            gameController.sendBoardCardToGraveyard(
-                                board,
-                                graveyard,
-                                selectedBoardCard
-                            );
-
-                            std::cout << "Poslata je karta sa boarda na graveyard: "
-                                      << name << std::endl;
-
-                            continue;
-                        }
-                    }
-
-
-                    selectedCard = nullptr;
-                    selectedBoardCard = nullptr;
-                    board.handleClick(e->position.x, e->position.y);
                 }
 
+                // RIGHT CLICK
                 if (e->button == sf::Mouse::Button::Right)
                 {
-                    if (selectedCard)
-                        cardView.show(*selectedCard);
-                    else if (selectedBoardCard)
-                        cardView.show(*selectedBoardCard);
-                    else
-                        cardView.hide();
+                    interaction.handleRightClick(cardView);
                 }
-
-
             }
         }
 
-        window.clear(Color::White);
-        board.draw(window);
-        board.drawBoardCards(window, selectedBoardCard);
-        inactiveHand->draw(window, nullptr);   // nema selekcije
-        activeHand->draw(window, selectedCard);
+        // ===============================
+        // 3️⃣ UPDATE
+        // ===============================
+        float dt = clock.restart().asSeconds();
+        cardView.update(dt);
+
+        // ===============================
+        // 4️⃣ DRAW
+        // ===============================
+        window.clear(sf::Color::White);
+
+        board.draw(
+            window,
+            interaction.getSelectedBoardCard(),
+            gameController.getCurrentPlayer()
+        );
+        inactiveHand->draw(window, nullptr);
+        activeHand->draw(window, interaction.getSelectedHandCard());
+
+
         gameDeck.draw(window);
-
-
-        // crtanje card viewa
+        graveyard.draw(window);
         cardView.draw(window);
         turnButtons.draw(window);
 
-
-
-        //window.draw(testCard.getSprite());
         window.display();
-
     }
+
     return 0;
 }

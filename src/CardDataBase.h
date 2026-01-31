@@ -74,7 +74,7 @@ private:
         {
             std::cerr << "Greska pri ucitavanju hrkmana!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Hrkman Piksla",hrkTex, 5, 3, 0, Rarity::Common, BaseAttack::Peashooter));
+        allCards.push_back(std::make_shared<Card>("Hrkman Piksla",hrkTex, 5, 3, 0, Rarity::Common, BaseAttack::Peashooter, AttackModifier::None, 1, "[PEASHOOTER]\nAbility 1: Pljugica\nLights one up and blows smoke into enemy's face" ));
         if (!jajaTex.loadFromFile("assets/cards/plavajaja.jpg"))
         {
             std::cerr << "Greska pri ucitavanju plavihjaja!\n";
@@ -94,7 +94,7 @@ private:
         {
             std::cerr << "Greska pri ucitavanju mine!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Mina Grbavi", grbaviTex,4,5,0, Rarity::Common, BaseAttack::Peashooter));
+        allCards.push_back(std::make_shared<Card>("Mina Grbavi", grbaviTex,4,5,9, Rarity::Common, BaseAttack::Peashooter));
         if (!kepecTex.loadFromFile("assets/cards/miloskepec.jpg"))
         {
             std::cerr << "Greska pri ucitavanju tijane!\n";
@@ -104,12 +104,13 @@ private:
         {
             std::cerr << "Greska pri ucitavanju nosferatua!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Djole Nosferatu", nosferatuTex, 13, 4, 0, Rarity::Epic, BaseAttack::Peashooter, AttackModifier::Reverse));
+        allCards.push_back(std::make_shared<Card>("Djole Nosferatu", nosferatuTex, 13, 4, 5, Rarity::Epic, BaseAttack::Peashooter, AttackModifier::Reverse));
         if (!rtdsefTex.loadFromFile("assets/cards/rtdsef.jpg"))
         {
             std::cerr << "Greska pri ucitavanju rtd sefa!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Sef Katedre", rtdsefTex, 14, 7, 0, Rarity::Rare, BaseAttack::Peashooter, AttackModifier::Zlatni));
+        allCards.push_back(std::make_shared<Card>("Sef Katedre", rtdsefTex, 14, 7, 6, Rarity::Hero, BaseAttack::Catapult, AttackModifier::Zlatni,1,"Lazar.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. "));
+
         if (!martamajmunTex.loadFromFile("assets/cards/martamajmun.jpg"))
         {
             std::cerr << "Greska pri ucitavanju marte majmunice!\n";

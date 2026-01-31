@@ -1,7 +1,3 @@
-//
-// Created by Dun Jik on 12/14/2025.
-//
-
 #ifndef SFMLPROJECT_DECK_H
 #define SFMLPROJECT_DECK_H
 
@@ -12,6 +8,7 @@
 #include "CardHand.h"
 #include "Hand.h"
 #include "CardDataBase.h"
+#include "Board.h"
 
 class Deck {
 
@@ -19,7 +16,7 @@ public:
 
     Deck(CardDataBase& db);
 
-    void setPosition(float x, float y);
+    void setPosition(const Board& board, float yOffset);
     void draw(sf::RenderWindow &window);
     bool contains(float x, float y);
 

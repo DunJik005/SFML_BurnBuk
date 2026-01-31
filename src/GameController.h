@@ -2,9 +2,11 @@
 #define SFMLPROJECT_GAMECONTROLLER_H
 
 #include "Board.h"
+#include "Deck.h"
 #include "HandleAttack.h"
 #include "TurnButtons.h"
 #include "Graveyard.h"
+#include "Tile.h"
 
 enum class GamePhase {
     Player1Place,
@@ -45,10 +47,14 @@ public:
         float windowWidth);
 
     void sendBoardCardToGraveyard(
-        Board& board,
+        Tile& tile,
         Graveyard& graveyard,
-        std::shared_ptr<CardBoard>& card
+        std::shared_ptr<Card>& card
     );
+
+    void updateHandsState(Hand& p1Hand, Hand& p2Hand);
+
+    void returnTopCardToHand(Tile& tile, Hand& hand, float windowWidth, float windowHeight);
 
 
     void update() {
@@ -57,6 +63,7 @@ public:
             case GamePhase::Player1Place:
                 if (player1TurnDone) {
                     std::cout << "Player1 je zavrsio potez\n";
+                    board.resetPlacedThisTurn();
                     currentPhase = GamePhase::Player2Place;
                     player1TurnDone = false; // reset flag
                 }
@@ -65,6 +72,7 @@ public:
             case GamePhase::Player2Place:
                 if (player2TurnDone) {
                     std::cout << "Player2 je zavrsio potez\n";
+                    board.resetPlacedThisTurn();
                     currentPhase = GamePhase::ResolveAttacks;
                     player2TurnDone = false; // reset flag
                 }

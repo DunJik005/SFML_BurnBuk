@@ -1,139 +1,137 @@
 #ifndef SFMLPROJECT_BOARD_H
 #define SFMLPROJECT_BOARD_H
-
-#include <vector>
+#include <array>
+#include <memory>
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics.hpp>
-#include <vector>
-#include "CardBoard.h"
-#include "CardHand.h"
-#include "Deck.h"
+#include "Tile.h"
 #include "Player.h"
+#include "TileOverlayRenderer.h"
+enum class Direction {
+    Forward,
+    Backward,
+    Left,
+    Right
+};
 
 class Board {
 public:
-    Board(float windowWidth, float windowHeight);
+    static constexpr int ROWS = 9;
+    static constexpr int COLS = 4;
 
-    void onResize(float windowWidth, float windowHeight);
+public:
+
+    Board(float winWidth, float winHeight);
+
+    void onResize(float winWidth, float winHeight);
+
+    bool handleClick(int mouseX, int mouseY);
+
+    void updateHover(int mouseX, int mouseY);
+
+    void resetPlacedThisTurn();
+
+
+
+    Tile& getTile(int row, int col);
+    const Tile& getTile(int row, int col) const;
+
+    bool isValidPosition(int row, int col) const;
+
+    bool placeCard(int row, int col, std::shared_ptr<Card> card);
+
+    std::shared_ptr<Card> removeTopCard(int row, int col);
+
+    void damagePlayer(Owner attacker, int damage);
+
+    bool isEnemySide(int row, Owner owner) const;
+
     void draw(sf::RenderWindow& window);
-    void handleClick(int x, int y);
+
+    std::pair<int, int> getTileAtPosition(float x, float y) const;
+
+    int getNextActiveRow(int fromRow, Owner attacker) const;
+
+    int getLeftColumn(int col) const;
+    int getRightColumn(int col) const;
+
+    float getLeftEdge() const;
+    float getCenterY() const;
 
 
 
 
-    //combat
 
-    // -------- COMBAT API --------
+    void draw(
+    sf::RenderWindow& window,
+    const std::shared_ptr<Card>& selected,
+    Owner currentPlayer);
 
-    bool isValidIndex(int index) const;
-    bool hasCardAt(int index) const;
 
-    std::shared_ptr<CardBoard> getCardAt(int tileIndex);
-    std::shared_ptr<CardBoard> removeCardAt(int tileIndex);
+
+
+
+
+    // ---------- Navigation ----------
+    Tile* getNextTile(int row, int col);
+    Tile* getNextTile(int row, int col, Owner owner);
+
+    // ---------- Movement ----------
+    bool moveTopCard(int row, int col, Direction dir);
+    bool moveStack(int row, int col, Direction dir);
+
+
+
+    // ---------- Range queries ----------
+    std::vector<std::shared_ptr<Card>>
+    getCardsInRangeFrom(
+        int startRow,
+        int startCol,
+        int range,
+        bool enemyOnly = true
+    );
+
+    bool getTargetPosition(
+    int row,
+    int col,
+    Direction dir,
+    int& outRow,
+    int& outCol
+    ) const;
+
 
     void cleanupDeadCards();
 
-    // damage igracu na osnovu pozicije napada
-    void damagePlayer(Owner attacker, int dmg);
+    Player& getPlayer1();
 
-    // strana boarda
-    bool isTopSide(int index) const;
-
-
-
-
-
-    // u Board.h (public)
-    int getTileIndexAt(int x, int y);
-    bool placeCardAt(int tileIndex, std::shared_ptr<CardBoard> card);
-    void drawBoardCards(sf::RenderWindow& window,
-                    const std::shared_ptr<CardBoard>& selected);
-
-
-    // za deck kockicu
-    sf::FloatRect getDeckBounds() const { return deck.getGlobalBounds(); }
-    sf::Vector2f getDeckPosition() const { return deck.getPosition(); }
-
-
-    sf::FloatRect getGraveyardBounds() const { return graveyard.getGlobalBounds(); }
-
-    Player& getPlayer1() { return player1; }
-    Player& getPlayer2() { return player2; }
-
-
-
+    Player& getPlayer2();
 
 private:
-    // Procenti – ti ovde menjaš kako želiš
-    float tileW = 0.12f;
+
+    std::array<std::array<Tile, COLS>, ROWS> grid;
+
+
+    // ---------- Window ----------
+    float winW;
+    float winH;
+
+    sf::Texture windowBackgroundTexture;
+    sf::Texture tileActiveTex;
+
+    sf::RectangleShape windowBackground; // pozadina celog prozora
+
+    // ---------- Visual layout ----------
+    float tileW = 0.12f;      // u procentima width-a
     float tileH = tileW * 6 / 5;
     float spacing = 0.01f;
     float sideMargin = 0.02f;
     float topMargin = 0.03f;
 
-    int rows = 4;
-    int cols = 4;
-
-    // dinamički računato
-    float winW;
-    float winH;
-
-    sf::RectangleShape graveyard;
-    //Deck* deck;
-    sf::RectangleShape deck;
-
-    std::vector<sf::RectangleShape> tiles;
-
-    void recalcLayout();
-    void fitCardToTile(const std::shared_ptr<CardBoard>& card, int tileIndex);
-
-    Owner getTileOwner(int tileIndex)const;
-
-
-    // u Board.h (privatni deo)
-    //std::vector<std::shared_ptr<CardHand>> hand;
-    std::vector<std::shared_ptr<CardBoard>> boardCards; // size = rows*cols, nullptr ako prazno
-
-    // dodatno
-    std::shared_ptr<CardHand> selectedHandCard = nullptr;
-
-
     Player player1;
     Player player2;
-
-};
-
-#endif
-
-/*class Card; // forward declaration
-
-class Board {
 private:
-    static constexpr int rows = 4;
-    static constexpr int cols = 4;
-
-    static constexpr float tileWidth = 200.f;
-    static constexpr float tileHeight = 250.f;
-    static constexpr float tileSpacing = 10.f;
-
-    static constexpr float topMargin = 25.f;
-    static constexpr float sideMargin = 25.f; // leva i desna margina
-
-    std::vector<sf::RectangleShape> tiles;
-
-    sf::Texture windowBackgroundTexture;
-    sf::RectangleShape windowBackground; // pozadina celog prozora
-
-    // Deck i Graveyard placeholders
-    sf::RectangleShape deck;
-    sf::RectangleShape graveyard;
-
-    sf::Texture tileTexture; // jedna tekstura za sve tile-ove
-
-public:
-    Board();
-    void draw(sf::RenderWindow& window);
-    void handleClick(int mouseX, int mouseY);
+    // ---------- Internal helpers ----------
+    void initTiles();     // inicijalni active/inactive + ownership
+    void recalcLayout();  // pozicioniranje tile-ova
+    TileOverlayRenderer overlayRenderer;
 };
-
 #endif // SFMLPROJECT_BOARD_H*/
