@@ -47,7 +47,13 @@ add_executable(burnbookalfa
         src/Tile.cpp
         src/Tile.h
         src/Textbox.cpp
-        src/Textbox.h)
+        src/Textbox.h
+        src/InteractionController.cpp
+        src/InteractionController.h
+        src/TileOverlayRenderer.cpp
+        src/TileOverlayRenderer.h
+        src/ReturnButton.cpp
+        src/ReturnButton.h)
 
 
 find_package(SFML 3 COMPONENTS Graphics Window System Audio REQUIRED)

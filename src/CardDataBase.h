@@ -109,7 +109,7 @@ private:
         {
             std::cerr << "Greska pri ucitavanju rtd sefa!\n";
         }
-        allCards.push_back(std::make_shared<Card>("Sef Katedre", rtdsefTex, 14, 7, 0, Rarity::Rare, BaseAttack::Peashooter, AttackModifier::Zlatni,1,"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. "));
+        allCards.push_back(std::make_shared<Card>("Sef Katedre", rtdsefTex, 14, 7, 6, Rarity::Hero, BaseAttack::Catapult, AttackModifier::Zlatni,1,"Lazar.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla eleifend, massa ut laoreet sagittis,nisi dui pretium nibh, ut vestibulum turpis dui eu mi. Vestibulum consequat turpis elit, nec sodales risus. "));
 
         if (!martamajmunTex.loadFromFile("assets/cards/martamajmun.jpg"))
         {

@@ -13,18 +13,32 @@ Deck::Deck(CardDataBase& db)
         cards.push_back(c);
     }
 
-    if (!deckTexture.loadFromFile("assets/deckic.png")) {
+    if (!deckTexture.loadFromFile("assets/tiletexture.png")) {
         std::cerr << "Ne mogu da ucitam deckic.png\n";
     } else {
-        deckSprite.setTexture(deckTexture);
+        deckSprite.setTexture(deckTexture, true);
     }
 
     std::cout << "Deck ima " << cards.size() << " karata.\n";
 }
 
-void Deck::setPosition(float x, float y) {
+void Deck::setPosition(const Board& board, float yOffset)
+{
+    constexpr float TARGET_HEIGHT = 150.f;
+
+    auto texSize = deckTexture.getSize();
+    if (texSize.y == 0) return;
+
+    float scale = TARGET_HEIGHT / texSize.y;
+    deckSprite.setScale({scale, scale});
+
+    auto bounds = deckSprite.getLocalBounds();
+    deckSprite.setOrigin({bounds.size.x / 2.f, bounds.size.y / 2.f});
+    float x = board.getLeftEdge() - deckSprite.getGlobalBounds().size.x / 2.f - 80.f;
+    float y = board.getCenterY() + yOffset ;
     deckSprite.setPosition({x, y});
 }
+
 
 void Deck::draw(sf::RenderWindow& window) {
     window.draw(deckSprite);

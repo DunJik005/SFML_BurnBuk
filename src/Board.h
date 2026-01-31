@@ -5,7 +5,7 @@
 #include <SFML/Graphics.hpp>
 #include "Tile.h"
 #include "Player.h"
-
+#include "TileOverlayRenderer.h"
 enum class Direction {
     Forward,
     Backward,
@@ -27,6 +27,9 @@ public:
     bool handleClick(int mouseX, int mouseY);
 
     void updateHover(int mouseX, int mouseY);
+
+    void resetPlacedThisTurn();
+
 
 
     Tile& getTile(int row, int col);
@@ -51,18 +54,17 @@ public:
     int getLeftColumn(int col) const;
     int getRightColumn(int col) const;
 
+    float getLeftEdge() const;
+    float getCenterY() const;
 
 
 
 
-    // moje ubaceno za deck graveyard i iscrtavanje
-    sf::Vector2f getDeckPosition() const;
-    sf::FloatRect getDeckBounds() const;
-    sf::FloatRect getGraveyardBounds() const;
-    void drawBoardCards(
+
+    void draw(
     sf::RenderWindow& window,
-    const std::shared_ptr<Card>& selected
-);
+    const std::shared_ptr<Card>& selected,
+    Owner currentPlayer);
 
 
 
@@ -72,8 +74,6 @@ public:
     // ---------- Navigation ----------
     Tile* getNextTile(int row, int col);
     Tile* getNextTile(int row, int col, Owner owner);
-
-    Tile* getTileAtOffset(int row, int col, int dRow, int dCol);
 
     // ---------- Movement ----------
     bool moveTopCard(int row, int col, Direction dir);
@@ -132,6 +132,6 @@ private:
     // ---------- Internal helpers ----------
     void initTiles();     // inicijalni active/inactive + ownership
     void recalcLayout();  // pozicioniranje tile-ova
-
+    TileOverlayRenderer overlayRenderer;
 };
 #endif // SFMLPROJECT_BOARD_H*/
