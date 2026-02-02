@@ -53,7 +53,11 @@ add_executable(burnbookalfa
         src/TileOverlayRenderer.cpp
         src/TileOverlayRenderer.h
         src/ReturnButton.cpp
-        src/ReturnButton.h)
+        src/ReturnButton.h
+        src/SQLite/sqlite3.c
+        src/SQLite/shell.c
+        src/SQLite/sqlite3.h
+        src/SQLite/sqlite3ext.h)
 
 
 find_package(SFML 3 COMPONENTS Graphics Window System Audio REQUIRED)
