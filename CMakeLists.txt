@@ -68,3 +68,11 @@ target_link_libraries(burnbookalfa
         SFML::System
         SFML::Audio
 )
+
+# Kopiranje baze podataka u build direktorijum
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_CURRENT_SOURCE_DIR}/karte.db"
+        "${CMAKE_CURRENT_BINARY_DIR}/karte.db"
+    COMMENT "Kopiranje baze podataka u folder sa .exe fajlom..."
+)
