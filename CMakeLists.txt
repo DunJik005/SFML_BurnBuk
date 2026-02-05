@@ -66,10 +66,16 @@ target_link_libraries(burnbookalfa
         SFML::Audio
 )
 
-# Kopiranje baze podataka u build direktorijum
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/burnbook.db"
-        "${CMAKE_CURRENT_BINARY_DIR}/burnbook.db"
-    COMMENT "Kopiranje baze podataka u folder sa .exe fajlom..."
+# Definisanje putanja radi preglednosti
+set(DB_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/burnbook.db")
+set(DB_DEST "${CMAKE_CURRENT_BINARY_DIR}/burnbook.db")
+
+# Kreira poseban "target" koji se uvek izvršava
+add_custom_target(update_db ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DB_SOURCE}" "${DB_DEST}"
+    COMMENT "Proveravam i osvezavam bazu podataka u build folderu..."
+    VERBATIM
 )
+
+# Primorava glavni program da saceka da se update_db zavrsi
+add_dependencies(${PROJECT_NAME} update_db)
