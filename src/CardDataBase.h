@@ -61,7 +61,7 @@ private:
     std::vector<std::shared_ptr<sf::Texture>> allTextures; // čuvamo životni vek
     std::mt19937 rng{std::random_device{}()}; // jedan rng za celu bazu
 
-    void initCards() {
+    void initCards(); /*{
         sqlite3* baza;
         int return_code = sqlite3_open("burnbook.db", &baza);
         if (return_code) std::cout << "Baza ne moze da se otvori!" << std::endl;
@@ -123,7 +123,7 @@ private:
             std::cerr << "Greska pri ucitavanju marte majmunice!\n";
         }
         allCards.push_back(std::make_shared<Card>("Marta Majmunica", martamajmunTex, 1, 1, 0, Rarity::Rare, BaseAttack::Peashooter, AttackModifier::Zlatni));
-    }
+    }*/
 };
 
 
