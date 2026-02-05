@@ -9,10 +9,14 @@
 #include <vector>
 #include <memory>
 #include <random>
+#include <map>
+#include <string>
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-
+extern "C" {
+    #include "SQLite/sqlite3.h"
+}
 
 
 inline AttackModifier operator|(AttackModifier a, AttackModifier b)
@@ -58,7 +62,10 @@ private:
     std::mt19937 rng{std::random_device{}()}; // jedan rng za celu bazu
 
     void initCards() {
-
+        sqlite3* baza;
+        int return_code = sqlite3_open("burnbook.db", &baza);
+        if (return_code) std::cout << "Baza ne moze da se otvori!" << std::endl;
+        else std::cout << "Povezan na bazu!" << std::endl;
 
         if (!dorotTex.loadFromFile("assets/cards/dorot.jpg"))
         {

@@ -22,6 +22,14 @@ enum class PlacementType {
 
 enum class Rarity { Common, Rare, Epic, Legendary, Hero };
 
+inline Rarity stringToRarity(const std::string& str) {
+    if (str == "Common")    return Rarity::Common;
+    if (str == "Rare")      return Rarity::Rare;
+    if (str == "Epic")      return Rarity::Epic;
+    if (str == "Legendary") return Rarity::Legendary;
+    return Rarity::Common; // Default vrednost
+}
+
 enum class AttackType { Chomper, Peashooter, Catapult, Special, Jelepeno, Nut, Tall_Nut,
     Pijavica, Support, Event, Sniper, Imitater, WideChomper, Zlatni_Chomper, LaserPeashooter, Zlatni_Peashooter, RapidPeashooter, ReversePeashooter, ReverseCatapult,
     Laser_Catapult, Catapult_Support, PlotTwist, Arena_Sniper, PlotTwist_Chomper, PlotTwist_Catapult, PlotTwist_Special, PlotTwist_Nut, PlotTwist_Jelepeno,
@@ -29,10 +37,83 @@ enum class AttackType { Chomper, Peashooter, Catapult, Special, Jelepeno, Nut, T
     Nut_Support, Event_Nut, Pijavica_Special, Zlatni_Sniper, Hemisfera, Protagonista, };
 
 
+inline AttackType stringToAttackType(const std::string& str) {
+    static const std::unordered_map<std::string, AttackType> stringToEnumMap = {
+        {"Chomper", AttackType::Chomper},
+        {"Peashooter", AttackType::Peashooter},
+        {"Catapult", AttackType::Catapult},
+        {"Special", AttackType::Special},
+        {"Jelepeno", AttackType::Jelepeno},
+        {"Nut", AttackType::Nut},
+        {"Tall Nut", AttackType::Tall_Nut},
+        {"Pijavica", AttackType::Pijavica},
+        {"Support", AttackType::Support},
+        {"Event", AttackType::Event},
+        {"Sniper", AttackType::Sniper},
+        {"Imitater", AttackType::Imitater},
+        {"WideChomper", AttackType::WideChomper},
+        {"Zlatni Chomper", AttackType::Zlatni_Chomper},
+        {"LaserPeashooter", AttackType::LaserPeashooter},
+        {"Zlatni Peashooter", AttackType::Zlatni_Peashooter},
+        {"RapidPeashooter", AttackType::RapidPeashooter},
+        {"ReversePeashooter", AttackType::ReversePeashooter},
+        {"ReverseCatapult", AttackType::ReverseCatapult},
+        {"Laser Catapult", AttackType::Laser_Catapult},
+        {"Catapult Support", AttackType::Catapult_Support},
+        {"PlotTwist", AttackType::PlotTwist},
+        {"Arena Sniper", AttackType::Arena_Sniper},
+        {"PlotTwist Chomper", AttackType::PlotTwist_Chomper},
+        {"PlotTwist Catapult", AttackType::PlotTwist_Catapult},
+        {"PlotTwist Special", AttackType::PlotTwist_Special},
+        {"PlotTwist Nut", AttackType::PlotTwist_Nut},
+        {"PlotTwist Jelepeno", AttackType::PlotTwist_Jelepeno},
+        {"PlotTwist RapidPeashooter", AttackType::PlotTwist_RapidPeashooter},
+        {"Peashooter Support", AttackType::Peashooter_Support},
+        {"Rapid Laser Peashooter", AttackType::Rapid_Laser_Peashooter},
+        {"Ker ili Zivotinja", AttackType::Ker_ili_Zivotinja},
+        {"Laser Peashooter ILI Zlatni Chomper", AttackType::Laser_Peashooter_ILI_Zlatni_Chomper},
+        {"Srpski Gad", AttackType::Srpski_Gad},
+        {"PlotTwist RapidPeashooter Support", AttackType::PlotTwist_RapidPeashooter_Support},
+        {"Nut Support", AttackType::Nut_Support},
+        {"Event Nut", AttackType::Event_Nut},
+        {"Pijavica Special", AttackType::Pijavica_Special},
+        {"Zlatni Sniper", AttackType::Zlatni_Sniper},
+        {"Hemisfera", AttackType::Hemisfera},
+        {"Protagonista", AttackType::Protagonista}
+    };
+
+    auto it = stringToEnumMap.find(str);
+    if (it != stringToEnumMap.end()) {
+        return it->second;
+    }
+
+    // Default vrednost ako string nije pronađen
+    return AttackType::Special;
+}
+
 // dodatak za mergovanje razlicitih keywordova na base napade
 enum class BaseAttack {
     Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica
 };
+
+inline BaseAttack stringToBaseAttack(const std::string& str) {
+    static const std::unordered_map<std::string, BaseAttack> stringToEnumMap = {
+        {"Chomper",    BaseAttack::Chomper},
+        {"Peashooter", BaseAttack::Peashooter},
+        {"Catapult",   BaseAttack::Catapult},
+        {"Nut",        BaseAttack::Nut},
+        {"Jelepeno",   BaseAttack::Jelepeno},
+        {"Pijavica",   BaseAttack::Pijavica}
+    };
+
+    auto it = stringToEnumMap.find(str);
+    if (it != stringToEnumMap.end()) {
+        return it->second;
+    }
+
+    // Default vrednost ako string u bazi ne odgovara nijednom tipu
+    return BaseAttack::Chomper;
+}
 
 enum class AttackModifier : uint32_t {
     None    = 0,
@@ -43,6 +124,25 @@ enum class AttackModifier : uint32_t {
     Wide    = 1 << 4
 };
 
+inline AttackModifier stringToModifiers(const std::string& str) {
+    uint32_t result = 0;
+    std::stringstream ss(str);
+    std::string segment;
+
+    while (std::getline(ss, segment, ',')) {
+        // Obriši prazna mesta ako postoje
+        segment.erase(0, segment.find_first_not_of(" "));
+        segment.erase(segment.find_last_not_of(" ") + 1);
+
+        if (segment == "Laser")   result |= static_cast<uint32_t>(AttackModifier::Laser);
+        if (segment == "Rapid")   result |= static_cast<uint32_t>(AttackModifier::Rapid);
+        if (segment == "Zlatni")  result |= static_cast<uint32_t>(AttackModifier::Zlatni);
+        if (segment == "Reverse") result |= static_cast<uint32_t>(AttackModifier::Reverse);
+        if (segment == "Wide")    result |= static_cast<uint32_t>(AttackModifier::Wide);
+    }
+
+    return static_cast<AttackModifier>(result);
+}
 
 
 class Ability {

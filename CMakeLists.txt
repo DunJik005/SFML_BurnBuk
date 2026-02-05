@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(burnbookalfa LANGUAGES CXX)
+project(burnbookalfa LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,8 +40,6 @@ add_executable(burnbookalfa
         src/GameController.h
         src/TurnButtons.cpp
         src/TurnButtons.h
-        src/CardDataBase.cpp
-        src/CardDataBase.h
         src/CardRender.cpp
         src/CardRender.h
         src/Tile.cpp
@@ -55,9 +53,8 @@ add_executable(burnbookalfa
         src/ReturnButton.cpp
         src/ReturnButton.h
         src/SQLite/sqlite3.c
-        src/SQLite/shell.c
         src/SQLite/sqlite3.h
-        src/SQLite/sqlite3ext.h)
+)
 
 
 find_package(SFML 3 COMPONENTS Graphics Window System Audio REQUIRED)
@@ -72,7 +69,7 @@ target_link_libraries(burnbookalfa
 # Kopiranje baze podataka u build direktorijum
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
-        "${CMAKE_CURRENT_SOURCE_DIR}/karte.db"
-        "${CMAKE_CURRENT_BINARY_DIR}/karte.db"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/burnbook.db"
+        "${CMAKE_CURRENT_BINARY_DIR}/burnbook.db"
     COMMENT "Kopiranje baze podataka u folder sa .exe fajlom..."
 )
