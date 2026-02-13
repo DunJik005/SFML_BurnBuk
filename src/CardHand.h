@@ -3,9 +3,11 @@
 
 #include "Card.h"
 #include <SFML/Graphics.hpp>
+#include "CardRender.h"
 
 class CardHand : public Card {
 public:
+    // ---------- Ctor ----------
     using Card::Card;
 
     // ---------- Drawing ----------
@@ -22,17 +24,15 @@ public:
     // ---------- Hand index ----------
     void setHandIndex(int index);
     int  getHandIndex() const;
-
-    // ---------- Textures ----------
-    static sf::Texture& getCardBackTexture();
-
     int handIndex = -1;
 
-private:
+    // ---------- Renderer ----------
+    CardRenderer &getCardRenderer() {return renderer;}
 
+private:
+    CardRenderer renderer;
     // ciljna širina u odnosu na ekran
     float targetWidth = 0.f;
-
     // helper
     void applyScaleFromWidth(float width);
 };

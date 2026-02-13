@@ -1,10 +1,15 @@
 #include "CardHand.h"
 #include <iostream>
-
+#include <SFML/Graphics.hpp>
 // ---------- Drawing ----------
 void CardHand::draw(sf::RenderWindow& window)
 {
-    Card::draw(window);
+    renderer.setCard(*this);
+    sf::Sprite& s = getSprite();
+    renderer.setPosition(s.getPosition());
+    renderer.setScale(s.getScale().x); // uniform scale
+
+    renderer.draw(window);
 }
 
 // ---------- Hit testing ----------
@@ -16,7 +21,7 @@ bool CardHand::containsPoint(float x, float y) const
 // ---------- Scaling ----------
 void CardHand::updateScale(float windowWidth)
 {
-    targetWidth = windowWidth / 12.f;
+    targetWidth = windowWidth / 5.f;
     applyScaleFromWidth(targetWidth);
 }
 
@@ -51,19 +56,4 @@ void CardHand::setHandIndex(int index)
 int CardHand::getHandIndex() const
 {
     return handIndex;
-}
-
-// ---------- Card back texture ----------
-sf::Texture& CardHand::getCardBackTexture()
-{
-    static sf::Texture back;
-    static bool loaded = false;
-
-    if (!loaded)
-    {
-        if (!back.loadFromFile("assets/backgroundHand.png"))
-            std::cerr << "Greska pri ucitavanju backgroundHand.png\n";
-        loaded = true;
-    }
-    return back;
 }

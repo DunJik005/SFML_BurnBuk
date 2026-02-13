@@ -6,6 +6,7 @@
 #include "Tile.h"
 #include "Player.h"
 #include "TileOverlayRenderer.h"
+#include "AttackSystem.h"
 enum class Direction {
     Forward,
     Backward,
@@ -20,7 +21,7 @@ public:
 
 public:
 
-    Board(float winWidth, float winHeight);
+    Board(float winWidth, float winHeight, Player& p1, Player& p2);
 
     void onResize(float winWidth, float winHeight);
 
@@ -38,6 +39,8 @@ public:
     bool isValidPosition(int row, int col) const;
 
     bool placeCard(int row, int col, std::shared_ptr<Card> card);
+
+    void placeJelepeno(int row, int col);
 
     std::shared_ptr<Card> removeTopCard(int row, int col);
 
@@ -71,6 +74,8 @@ public:
 
 
 
+
+
     // ---------- Navigation ----------
     Tile* getNextTile(int row, int col);
     Tile* getNextTile(int row, int col, Owner owner);
@@ -90,6 +95,13 @@ public:
         bool enemyOnly = true
     );
 
+    Tile* getNextActiveTileVertical(int row, int col, int dir);
+
+    std::vector<const Tile*> getActiveEnemyTiles(Owner attacker) const;
+
+    void incrementAllCardAges();
+
+
     bool getTargetPosition(
     int row,
     int col,
@@ -98,12 +110,14 @@ public:
     int& outCol
     ) const;
 
+    Tile* getTileAtOffset(int row, int col, int dRow, int dCol);
 
     void cleanupDeadCards();
 
-    Player& getPlayer1();
+    Player& getPlayer1(){ return player1;}
 
-    Player& getPlayer2();
+
+    Player& getPlayer2(){ return player2;}
 
 private:
 
@@ -126,8 +140,8 @@ private:
     float sideMargin = 0.02f;
     float topMargin = 0.03f;
 
-    Player player1;
-    Player player2;
+    Player& player1;
+    Player& player2;
 private:
     // ---------- Internal helpers ----------
     void initTiles();     // inicijalni active/inactive + ownership

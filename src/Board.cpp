@@ -7,8 +7,8 @@ static constexpr float BOARD_HEIGHT_RATIO = 0.70f; // 70%
 
 
 // ---------- Ctor ----------
-Board::Board(float windowWidth, float windowHeight)
-    : winW(windowWidth), winH(windowHeight)
+Board::Board(float windowWidth, float windowHeight, Player& p1, Player& p2)
+    : winW(windowWidth), winH(windowHeight), player1(p1), player2(p2)
 {
 
     if (!windowBackgroundTexture.loadFromFile("assets/backgroundtexture.png")) {
@@ -36,7 +36,7 @@ void Board::initTiles()
             Tile& tile = grid[r][c];
 
             // Active / Inactive rows
-            if (r == 1 || r== 2 || r == 3 || r == 5 || r == 7)
+            if (r == 1 || r == 3 || r == 5 || r == 7)
                 tile.setState(Tile::State::Active);
             else
                 tile.setState(Tile::State::Inactive);
@@ -165,6 +165,30 @@ void Board::cleanupDeadCards() {
             grid[r][c].cleanupDeadCards();
 }
 
+void Board::incrementAllCardAges()
+{
+    for (int r = 0; r < ROWS; r++)
+    {
+        for (int c = 0; c < COLS; c++)
+        {
+            Tile& tile = grid[r][c];
+
+            if (!tile.isActive())
+                continue;
+
+            const auto& cards = tile.getAllCards();
+            for (const auto& card : cards)
+            {
+                if (card) {
+                    card->setAge(card->getAge() + 1);
+                    std::cout << card->getName() << "Kartin novi age je: " << card->getAge() << "\n";
+                }
+            }
+        }
+    }
+}
+
+
 bool Board::handleClick(int mouseX, int mouseY)
 {
     auto [row, col] = getTileAtPosition(
@@ -236,8 +260,48 @@ bool Board::placeCard(int row, int col, std::shared_ptr<Card> card)
         return false;
     }
 
+    if (card->getBaseAttack() == BaseAttack::Jelepeno) {
+        std::cout << "Jelepeno bacen na tile i trigerivan\n";
+        placeJelepeno(row, col);
+    }
+
     return true;
 }
+
+
+
+
+
+void Board::placeJelepeno(int row, int col)
+{
+    if (!isValidPosition(row, col))
+        return;
+
+    Tile& tile = grid[row][col];
+
+    auto spell = tile.getAttackTarget();
+    if (!spell)
+        return;
+
+    std::cout
+        << "[JELEPENO] on (" << row << "," << col << ") "
+        << "DMG=" << spell->getDamage() << "\n";
+
+    // 1. izvrši AoE
+    AttackSystem::attackJelepeno(*this, row, col);
+
+    // 2. počisti mrtve karte
+    cleanupDeadCards();
+
+    // 3. ukloni spell sa tile-a (ako ga attack nije već uklonio)
+    if (!tile.empty() && tile.getAttackTarget() == spell)
+        tile.removeTopCard();
+
+    std::cout << "[JELEPENO] removed from board\n";
+}
+
+
+
 
 
 std::shared_ptr<Card> Board::removeTopCard(int row, int col) {
@@ -272,6 +336,55 @@ int Board::getRightColumn(int col) const
     if (col >= COLS - 1)
         return -1;
     return col + 1;
+}
+
+Tile* Board::getNextActiveTileVertical(int row, int col, int dir)
+{
+    int r = row + dir;
+
+    while (r >= 0 && r < ROWS)
+    {
+        if (grid[r][col].isActive())
+            return &grid[r][col];
+        r += dir;
+    }
+    return nullptr;
+}
+
+Tile* Board::getTileAtOffset(int row, int col, int dRow, int dCol)
+{
+    int newRow = row + dRow;
+    int newCol = col + dCol;
+
+    if (newRow < 0 || newRow >= ROWS || newCol < 0 || newCol >= COLS)
+        return nullptr;
+
+    return &grid[newRow][newCol];
+}
+
+std::vector<const Tile*> Board::getActiveEnemyTiles(Owner attacker) const
+{
+    std::vector<const Tile*> tiles;
+
+    Owner enemy = (attacker == Owner::Player1 ? Owner::Player2 : Owner::Player1);
+
+    for (int r = 0; r < ROWS; r++)
+    {
+        // samo redovi koji pripadaju enemy-u
+        if (grid[r][0].getOwner() != enemy)
+            continue;
+
+        // samo ACTIVE redovi
+        if (!grid[r][0].isActive())
+            continue;
+
+        for (int c = 0; c < COLS; c++)
+        {
+            tiles.push_back(&grid[r][c]);
+        }
+    }
+
+    return tiles;
 }
 
 Tile* Board::getNextTile(int row, int col)

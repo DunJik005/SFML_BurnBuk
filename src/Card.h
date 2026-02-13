@@ -16,7 +16,8 @@ enum class Owner {
 enum class PlacementType {
     Normal,        // standardna karta (na svoj tile)
     Parasite,      // kači se na enemy kartu (stack)
-    Infiltrator    // ide na prazno enemy polje
+    Infiltrator,
+    Jelepeno// ide na prazno enemy polje
 };
 
 
@@ -31,7 +32,7 @@ enum class AttackType { Chomper, Peashooter, Catapult, Special, Jelepeno, Nut, T
 
 // dodatak za mergovanje razlicitih keywordova na base napade
 enum class BaseAttack {
-    Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica
+    Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica, Hemisfera, Sniper, Pump
 };
 
 enum class AttackModifier : uint32_t {
@@ -40,7 +41,8 @@ enum class AttackModifier : uint32_t {
     Rapid   = 1 << 1,
     Zlatni  = 1 << 2,
     Reverse = 1 << 3,
-    Wide    = 1 << 4
+    Wide    = 1 << 4,
+    Tall    = 1 << 5
 };
 
 
@@ -66,6 +68,11 @@ private:
     int cooldown = 0;
     int stunned = 0;
     int hitCount;
+    int age = 0;
+    bool musko;
+    bool gay;
+    int maxHp;
+    bool immune;
     Owner owner;
 
     PlacementType placementType = PlacementType::Normal;
@@ -89,6 +96,9 @@ private:
     std::vector<std::shared_ptr<Ability>> abilities;
 
 
+    std::string placeSoundPath; // "" = koristi BaseAttack
+
+
 
 
 
@@ -100,7 +110,7 @@ public:
      AttackModifier mods = AttackModifier::None,
      int hits = 1,
      const std::string& description = "",
-     PlacementType placement = PlacementType::Normal);
+     PlacementType placement = PlacementType::Normal, bool musko = true, bool gay = false, bool immune = false, std::string sound = "");
 
     // SETTERS
     void setHP(int h) { hp = h; }
@@ -119,13 +129,29 @@ public:
     void setHitCount(int c) { hitCount = c; }
     void setPlacementType(PlacementType p) { placementType = p;}
     void setIgnoresTileRules(bool v) { ignoresTileRules = v; }
+    void setPol(bool nesto) { musko = nesto; }
+    void setGay(bool nesto) { gay = nesto; }
+    void setAge(int broj) { age = broj; }
+    void setMaxHp(int h) { maxHp = h; }
+    void setImmune(bool v) { immune = v; }
+    void setSoundPath(const std::string& filename) {
+        if (filename.empty()) {
+            placeSoundPath = "";
+        } else {
+            placeSoundPath = "assets/music/sounds/" + filename;
+        }
+    }
+
+
+
+
 
     // dodata metoda za setSpritePosition, mozda bude mogo i obican setPosition
     void setSpritePosition(float x, float y) { sprite.setPosition({x, y}); }
 
     void setBrightness(bool value);
     void resetVisuals();
-
+    void applyVisualMode();
 
     void flip() { faceUp = !faceUp; }
 
@@ -154,6 +180,7 @@ public:
     const sf::Sprite& getSprite() const { return sprite; }
     sf::Sprite& getSprite(){ return sprite; }
     const sf::Sprite& getFrameSprite() const {return rarityFrameSprite;}
+    sf::IntRect getArtRect() const; //
     std::vector<std::shared_ptr<Ability>>& getAbilities() { return abilities; }
     const sf::Texture* getTexture() const { return texture; }
     Owner getOwner() const{return owner;}
@@ -165,6 +192,12 @@ public:
     int getHitCount() const{ return hitCount; }
     PlacementType getPlacementType()const{return placementType;}
     bool getIgnoresTileRules() const { return ignoresTileRules; }
+    bool getPol() const { return musko; }
+    bool getGay() const { return gay; }
+    int getAge() const { return age; }
+    int getMaxHp() const { return maxHp; }
+    bool getImmune() const { return immune; }
+    const std::string& getSoundPath() const { return placeSoundPath; }
 
 
     static sf::Texture& getRarityFrame(Rarity r);

@@ -11,6 +11,7 @@
 #include "GameController.h"
 #include "InteractionController.h"
 #include "CardDataBase.h"
+#include "MusicManager.h"
 #include <iostream>
 #include <SFML/Audio.hpp>
 using namespace sf;
@@ -20,15 +21,27 @@ int main() {
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
+
+
+
     sf::Music music;
-    if (!music.openFromFile("assets/music/POTC.ogg")) {
+    if (!music.openFromFile("assets/music/desinger.ogg")) {
         std::cout << "Muzika nije ucitana."<< std::endl;
     }
     music.play();
     music.setLooping(true);
+
+
+
+    /*MusicManager::instance().loadBackgroundPlaylist("assets/music/background");
+    MusicManager::instance().playBackground();*/
+
+
+
+
     RenderWindow window(
         //VideoMode({1820,1080}),
-        VideoMode({1000, 600}),
+        VideoMode({1200, 800}),
         "Tedzan uci",
         sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize
     );
@@ -47,7 +60,7 @@ int main() {
 
 
     // pravi se board
-    Board board(window.getSize().x, window.getSize().y);
+    Board board(window.getSize().x, window.getSize().y, player1, player2);
 
     TurnButtons turnButtons(window.getSize().x, window.getSize().y);
 
@@ -83,6 +96,9 @@ int main() {
         // 1️⃣ UPDATE HAND STATE (GC)
         // ===============================
         gameController.updateHandsState(p1Hand, p2Hand);
+
+
+        MusicManager::instance().update(); // update muzike
 
         Hand* activeHand =
             (gameController.getCurrentPlayer() == Owner::Player1)

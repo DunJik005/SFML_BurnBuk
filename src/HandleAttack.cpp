@@ -2,16 +2,12 @@
 
 
 // PRIORITET AKTIVACIJE REDOVA (od najvišeg ka najnižem)
-const std::vector<int> attackRows = {
-    4, // srednji red (ako je aktivan)
-    3, // Player1 front
-    5, // Player2 front
-    2, // Player1 middle (default inactive)
-    6, // Player2 middle (default inactive)
-    1, // Player1 back
-    7, // Player2 back
-    0, // Player1 back-back
-    8  // Player2 back-back
+const std::vector<std::vector<int>> attackPhases = {
+    {4},        // srednji red
+    {3, 5},     // front
+    {2, 6},     // middle
+    {1, 7},     // back
+    {0, 8}      // back-back
 };
 
 
@@ -22,23 +18,26 @@ void HandleAttack::executeAttacks()
     // kolone: desno → levo
     for (int col = Board::COLS - 1; col >= 0; --col)
     {
-        for (int row : attackRows)
+        for (const auto& phase : attackPhases)
         {
-            if (!board.isValidPosition(row, col))
-                continue;
+            // 1️⃣ SVI NAPADI U FAZI
+            for (int row : phase)
+            {
+                if (!board.isValidPosition(row, col))
+                    continue;
 
-            Tile& tile = board.getTile(row, col);
+                Tile& tile = board.getTile(row, col);
 
-            if (!tile.isActive())
-                continue;
+                if (!tile.isActive() || tile.empty())
+                    continue;
 
-            if (tile.empty())
-                continue;
+                AttackSystem::resolveAttack(board, row, col);
+            }
 
-            // 🔥 samo aktiviramo kartu
-            AttackSystem::resolveAttack(board, row, col);
+            // 2️⃣ CLEANUP POSLE CELE FAZE
+            board.cleanupDeadCards();
         }
     }
 
-    board.cleanupDeadCards();
+    board.incrementAllCardAges();
 }

@@ -9,44 +9,45 @@
 
 class Hand : OnResize{
 public:
+    // ---------- Ctor ----------
     Hand() = default;
-
-    // init
-    // layout
-    void recalcLayout(float windowWidth);
-
+    // ---------------- LAYOUT ----------------
     void onResize(float windowWidth, float windowHeight) override;
 
-
-    // input
+    // ---------- Handle Click ----------
     std::shared_ptr<CardHand> handleClick(float x, float y);
 
-    // modify
+    // ---------- Modify ----------
     void addCard(const std::shared_ptr<CardHand>& card, float windowWidth, float windowHeight);
-    void removeHand(const std::shared_ptr<CardHand>& card, float windowWidth);
-
+    void removeHand(const std::shared_ptr<CardHand>& card);
     void setVisibleOwner(Owner o) { visibleOwner = o; }
 
-    // render
-    void draw(sf::RenderWindow& window,
-              const std::shared_ptr<CardHand>& selected = nullptr);
+    // ---------- Draw ----------
+    void draw(sf::RenderWindow& window, const std::shared_ptr<CardHand>& selected = nullptr);
 
-    // KOD ZA DRUGI HAND GORE NAOPAK
-    void setActive(bool value) { isActive = value; }
+    // ---------- Active Hand ----------
+    void setActive(bool value);
+    bool getActive(){ return isActive; }
 
 
 private:
-
+    // ---------- Owner ----------
     Owner visibleOwner = Owner::Player1;
-
-    // dodato za dupli hand i obrnut
     bool isActive = true;
-    //bool drawOnTop = false;
-
+    // ---------- All cards ----------
     std::vector<std::shared_ptr<CardHand>> cards;
 
-    float baseY = 0.f;
-    float spacing = 50.f;
+    // ---------- Scaling and positioning parameters ----------
+    float cardScale = 0.2f;
+    float overlapRatio = 0.25f; // koliko se preklapaju
+    float centerX = 0.f;
+    float zoneHeight = 0.f;
+    float baseY = 0.f; //odakle krece pozicija karte
+
+    // ---------- Last Window Size ----------
+    float lastWindowWidth = 0.f;
+    float lastWindowHeight = 0.f;
+
 };
 
 #endif

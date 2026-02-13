@@ -1,4 +1,7 @@
 #include "AttackSystem.h"
+#include "Board.h"
+#include "Tile.h"
+#include "Card.h"
 
 
 void AttackSystem::resolveAttack(Board& board, int row, int col)
@@ -10,9 +13,6 @@ void AttackSystem::resolveAttack(Board& board, int row, int col)
 
     auto attackerPtr = originTile.getAttackTarget();
     if (!attackerPtr)
-        return;
-
-    if (attackerPtr->getHP() <= 0)
         return;
 
     Card& attacker = *attackerPtr;
@@ -33,15 +33,24 @@ void AttackSystem::resolveAttack(Board& board, int row, int col)
         case BaseAttack::Nut:
             linearAttack(board, row, col);
             break;
-/*
-        case BaseAttack::Nut:
-            attackNut(board, row, col);
-            break;
 
         case BaseAttack::Jelepeno:
             attackJelepeno(board, row, col);
             break;
-            */
+
+        case BaseAttack::Hemisfera:
+            attackHemisfera(board, row, col);
+            break;
+
+        case BaseAttack::Sniper:
+            attackSniper(board, row, col);
+            break;
+
+
+        case BaseAttack::Pump:
+            attackPump(board, row, col);
+            break;
+
 
         default:
             break;
@@ -78,10 +87,15 @@ bool AttackSystem::hasModifier(AttackModifier mods, AttackModifier flag) {
 
 void AttackSystem::linearAttack(Board& board, int row, int col)
 {
+    std::cout << "[LINEAR ATTACK] from (" << row << "," << col << ")";
+
     Tile& originTile = board.getTile(row, col);
     auto attackerPtr = originTile.topCard();
     if (!attackerPtr)
+    {
+        std::cout << "   no card on origin tile\n";
         return;
+    }
 
     Card& attacker = *attackerPtr;
 
@@ -95,35 +109,90 @@ void AttackSystem::linearAttack(Board& board, int row, int col)
 
     int hits = rapid ? attacker.getHitCount() : 1;
 
-    // kolone koje gadjamo
+
+
+    std::cout
+        << "attacker = " << attacker.getName()
+        << " owner = " << (int)attacker.getOwner()
+        << " dmg=" << attacker.getDamage()
+        << " range=" << range
+        << " hits=" << hits
+        << " laser=" << laser
+        << " wide=" << wide
+        << " reverse=" << reverse
+        << " zlatni=" << zlatni
+        << "\n";
+
+    // ======================================
+    // Kolone koje napadamo
+    // ======================================
     std::vector<int> cols = { col };
+
     if (wide)
     {
         int l = board.getLeftColumn(col);
         int r = board.getRightColumn(col);
-        if (l != -1)
-            cols.push_back(l);
-        if (r != -1)
-            cols.push_back(r);
+
+        if (l != -1) cols.push_back(l);
+        if (r != -1) cols.push_back(r);
     }
 
+    std::cout << "attack columns:";
+    for (int c : cols) std::cout << " " << c;
+    std::cout << "\n";
+
+    // ======================================
+    // Hit loop
+    // ======================================
     for (int h = 0; h < hits; h++)
     {
+        std::cout << "number of hits " << (h + 1) << "/" << hits << "\n";
+
         for (int attackCol : cols)
         {
-            std::vector<int> rowsInRange;
+            std::cout << "column " << attackCol << "\n";
 
+            std::vector<int> rowsInRange;
             int currentRow = row;
+
             for (int step = 0; step < range; step++)
             {
                 currentRow = board.getNextActiveRow(currentRow, attacker.getOwner());
                 if (currentRow == -1)
                     break;
+
                 rowsInRange.push_back(currentRow);
             }
 
             if (reverse)
                 std::reverse(rowsInRange.begin(), rowsInRange.end());
+
+            std::cout << "scanning rows:";
+            for (int rr : rowsInRange)
+                std::cout << " " << rr;
+            std::cout << "\n";
+
+
+
+        // PROVERA DA LI SE U KOLONI NALAZI TALL PROTIVNICKA KARTA
+            bool hasTall = false;
+            Tile* tallTile = nullptr;
+            for (int r : rowsInRange)
+            {
+                Tile& t = board.getTile(r, attackCol);
+                auto card = t.getFirstEnemyCard(attacker.getOwner());
+                if (card && hasModifier(card->getModifiers(), AttackModifier::Tall))
+                {
+                    hasTall = true;
+                    tallTile = &t;
+                    break;
+                }
+            }
+
+
+
+
+
 
             bool hitCard = false;
 
@@ -133,37 +202,104 @@ void AttackSystem::linearAttack(Board& board, int row, int col)
 
                 if (tile.empty())
                 {
-                    if (laser)
+                    if (laser && tile.getOwner() != attacker.getOwner())
+                    {
                         board.damagePlayer(attacker.getOwner(), attacker.getDamage());
+                        std::cout
+                            << "laser through empty tile ("
+                            << r << "," << attackCol
+                            << ") → dmg player for "
+                            << attacker.getDamage() << "\n";
+                    }
                     continue;
                 }
 
-                auto target = tile.getAttackTarget();
+                auto target = tile.getFirstEnemyCard(attacker.getOwner());
                 if (!target)
+                {
+                    std::cout
+                        << "tile (" << r << "," << attackCol
+                        << ") has no valid target\n";
                     continue;
+                }
+
+                // REVERSE MORA DA UDARI TALL KARTU SA TALLTILEA, a ne karte pozadi
+                if (reverse && hasTall)
+                {
+                    target = tallTile->getFirstEnemyCard(attacker.getOwner());
+                    if (target)
+                    {
+                        int hpBefore = target->getHP();
+                        target->setHP(hpBefore - attacker.getDamage());
+                        std::cout << "Reverse hits Tall only: " << target->getName()
+                                  << " HP " << hpBefore << " -> " << target->getHP() << "\n";
+                    }
+                    break;
+                }
+
 
                 int hpBefore = target->getHP();
                 target->setHP(hpBefore - attacker.getDamage());
 
                 std::cout
-                    << "    Hit card at (" << r << "," << attackCol
-                    << ") HP " << hpBefore << " -> " << target->getHP() << "\n";
+                    << "HIT " << target->getName()
+                    << " at (" << r << "," << attackCol
+                    << ") HP " << hpBefore
+                    << " -> " << target->getHP() << "\n";
 
                 if (zlatni && target->getHP() < 0)
                 {
                     board.damagePlayer(attacker.getOwner(), -target->getHP());
-                    target->setHP(0);
+
+                    std::cout
+                        << "zlatni overflow → damage player for: "
+                        << -target->getHP() << "\n";
                 }
 
+
                 hitCard = true;
-                if (!laser)
+                if (laser)
+                {
+                    if (hasTall && &tile == tallTile)
+                    {
+                        std::cout << "Laser hits Tall → stops further tiles\n";
+                        break;
+                    }
+                }
+                else
+                {
+                    std::cout << "stopping (not laser)\n";
                     break;
+                }
             }
 
+
             if (!hitCard)
-                board.damagePlayer(attacker.getOwner(), attacker.getDamage());
+            {
+                bool enemyInRange = false;
+
+                for (int r : rowsInRange)
+                {
+                    Tile& t = board.getTile(r, attackCol);
+                    if (t.getOwner() != attacker.getOwner())
+                    {
+                        enemyInRange = true;
+                        break;
+                    }
+                }
+
+                if (enemyInRange)
+                {
+                    board.damagePlayer(attacker.getOwner(), attacker.getDamage());
+                    std::cout << "Player damaged for:" << attacker.getDamage() << std::endl;
+                }
+            }
+
         }
+        board.cleanupDeadCards();
     }
+
+    std::cout << "\n\n";
 }
 
 
@@ -171,159 +307,430 @@ void AttackSystem::linearAttack(Board& board, int row, int col)
 
 
 
+void AttackSystem::attackJelepeno(Board &board, int row, int col) {
+    Tile &origin = board.getTile(row, col);
+    auto spellPtr = origin.getAttackTarget();
+    if (!spellPtr)
+        return;
 
+    Card &spell = *spellPtr;
 
+    std::cout << "[JELEPENO] " << spell.getName()
+            << " at (" << row << "," << col << ")\n";
 
+    const std::string &name = spell.getName();
 
+    // ============================
+    // IVANA DZARKA – krst
+    // ============================
+    if (name == "Ivana Dzarka") {
+        // centar
+        hitTileWithSpell(board, &origin, spell);
 
+        // gore
+        hitTileWithSpell(
+            board,
+            board.getNextActiveTileVertical(row, col, -1),
+            spell
+        );
 
+        // dole
+        hitTileWithSpell(
+            board,
+            board.getNextActiveTileVertical(row, col, +1),
+            spell
+        );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-void AttackSystem::attackChomper(Board &board, int index) {
-
-    auto attacker = board.getCardAt(index);
-    if (!attacker) return;
-    int dir = AttackSystem::getDirection(*attacker);
-    int targetIndex = index + dir;
-
-    std::cout
-        << "  [CHOMPER] from tile "
-        << index
-        << " -> checking tile "
-        << targetIndex
-        << "\n";
-
-
-    if (!board.isValidIndex(targetIndex)) return;
-    auto target = board.getCardAt(targetIndex);
-    if (target) {
-        std::cout
-            << "    Hits CARD at tile "
-            << targetIndex
-            << " | target HP before=" << target->getHP()
-            << "\n";
-        target->setHP(target->getHP() - attacker->getDamage());
-        std::cout
-            << "    Target HP after=" << target->getHP()
-            << "\n";
+        // levo / desno
+        hitTileWithSpell(board, board.getTileAtOffset(row, col, 0, -1), spell);
+        hitTileWithSpell(board, board.getTileAtOffset(row, col, 0, +1), spell);
     } else {
-        std::cout << "    No card -> hits PLAYER\n";
-        board.damagePlayer(attacker->getOwner(), attacker->getDamage());
+        std::cout << "⚠ Unknown Jelepeno spell\n";
+    }
+
+    // uvek isto
+    sf::sleep(sf::seconds(1.5f));
+    board.cleanupDeadCards();
+    //origin.removeTopCard();
+
+    std::cout << "[JELEPENO] removed\n";
+}
+
+
+
+
+
+
+
+
+
+void AttackSystem::hitTileWithSpell(Board& board, Tile* tile, Card& spell)
+{
+    if (!tile)
+        return;
+
+    // 1️⃣ uvek prvo tražimo enemy kartu
+    auto target = tile->getFirstEnemyCard(spell.getOwner());
+
+    // ako postoji enemy karta → udaramo jede
+    if (target)
+    {
+        int before = target->getHP();
+        target->setHP(before - spell.getDamage());
+
+        std::cout << "   hit " << target->getName()
+                  << " HP " << before << " -> " << target->getHP() << "\n";
+        return;
+    }
+
+    // 2️⃣ nema enemy karte → sad gledamo čiji je tile
+
+    // ako je tile protivnikov → dmg player
+    if (tile->getOwner() != spell.getOwner())
+    {
+        board.damagePlayer(spell.getOwner(), spell.getDamage());
+        std::cout << "   hit enemy player for " << spell.getDamage() << "\n";
+    }
+    // ako je moj tile i nema enemy karte → ništa
+}
+
+
+
+
+
+
+
+
+void AttackSystem::attackHemisfera(Board& board, int row, int col)
+{
+    Tile& origin = board.getTile(row, col);
+    auto attackerPtr = origin.getAttackTarget();
+    if (!attackerPtr)
+        return;
+
+    Card& attacker = *attackerPtr;
+
+    bool rapid  = hasModifier(attacker.getModifiers(), AttackModifier::Rapid);
+    bool zlatni = hasModifier(attacker.getModifiers(), AttackModifier::Zlatni);
+
+    int hits = rapid ? attacker.getHitCount() : 1;
+
+    Owner me = attacker.getOwner();
+
+    std::cout << "[HEMISFERA] at (" << row << "," << col << ") hits=" << hits << "\n";
+
+    auto enemyTiles = board.getActiveEnemyTiles(me);
+
+    for (int h = 0; h < hits; h++)
+    {
+        for (const Tile* tile : enemyTiles)
+        {
+            // traži prvu enemy kartu (ignoriše parasite)
+            auto target = tile->getFirstEnemyCard(me);
+
+            if (target)
+            {
+                int before = target->getHP();
+                target->setHP(before - attacker.getDamage());
+
+                /*std::cout << "  hit " << target->getName()
+                          << " at (" << tile->getRow() << "," << tile->getCol()
+                          << ") HP " << before << " -> " << target->getHP() << "\n";*/
+
+                if (zlatni && target->getHP() < 0)
+                {
+                    board.damagePlayer(me, -target->getHP());
+                    target->setHP(0);
+                }
+            }
+            else
+            {
+                board.damagePlayer(me, attacker.getDamage());
+
+                std::cout << "  hit enemy player from tile\n";
+            }
+        }
+        board.cleanupDeadCards();
     }
 }
 
-void AttackSystem::attackPeashooter(Board& board, int index) {
-    auto attacker = board.getCardAt(index);
-    if (!attacker) return;
 
-    int dir = getDirection(*attacker);
 
-    int firstIndex = index + dir;
-    int secondIndex = index + dir * 2;
 
-    std::cout
-        << "  [PEASHOOTER] from tile "
-        << index
-        << " checking " << firstIndex << " then " << secondIndex
-        << "\n";
 
-    if (board.isValidIndex(firstIndex)) {
-        auto target = board.getCardAt(firstIndex);
 
-        if (target) {
-            std::cout
-                << "    Hits CARD at tile "
-                << firstIndex
-                << " HP before=" << target->getHP()
-                << "\n";
-            target->setHP(target->getHP() - attacker->getDamage());
 
-            std::cout
-                << "    Target HP after=" << target->getHP()
-                << "\n";
 
-            return;
+std::vector<AttackSystem::SniperTarget>
+AttackSystem::collectSniperTargets(Board& board, Owner me, int row, int col)
+{
+    std::vector<SniperTarget> targets;
+
+    for (int r = 0; r < Board::ROWS; r++)
+    {
+        if (!board.getTile(r, 0).isActive())
+            continue;
+
+        for (int c = 0; c < Board::COLS; c++)
+        {
+            Tile& tile = board.getTile(r, c);
+            auto target = tile.getFirstEnemyCard(me);
+            if (!target)
+                continue;
+
+            int dist = std::abs(r - row) + std::abs(c - col);
+            targets.push_back({ &tile, target, dist });
         }
     }
-    if (board.isValidIndex(secondIndex)) {
-        auto target = board.getCardAt(secondIndex);
 
-        if (target) {
-            std::cout
-                << "    Hits CARD at tile "
-                << secondIndex
-                << " HP before=" << target->getHP()
-                << "\n";
-            target->setHP(target->getHP() - attacker->getDamage());
-            std::cout
-                << "    Target HP after=" << target->getHP()
-                << "\n";
-            return;
-        }
-    }
-    board.damagePlayer(attacker->getOwner(), attacker->getDamage());
+    return targets;
 }
 
-void AttackSystem::attackNut(Board &board, int index) {
-    //nista
+
+
+
+
+
+
+
+void AttackSystem::dealDamageToCard(Board& board, Card& sniper, std::shared_ptr<Card> target)
+{
+    Owner me = sniper.getOwner();
+
+    bool zlatni = hasModifier(sniper.getModifiers(), AttackModifier::Zlatni);
+
+    int before = target->getHP();
+    target->setHP(before - sniper.getDamage());
+
+    std::cout << "   hit " << target->getName()
+              << " HP " << before
+              << " -> " << target->getHP() << "\n";
+
+    if (zlatni && target->getHP() < 0)
+    {
+        board.damagePlayer(me, -target->getHP());
+        std::cout << "   zlatni overflow → dmg player for "
+                  << -target->getHP() << "\n";
+        target->setHP(0);
+    }
 }
 
-void AttackSystem::attackJelepeno(Board &board, int index) {
-    auto attacker = board.getCardAt(index);
-    if (!attacker) return;
 
-    const int cols = 4;
-    const int rows = 4;
 
-    int row = index / cols;
-    int col = index % cols;
 
-    // centralna ćelija + 4 susedne
-    std::vector<int> targets;
-    targets.push_back(index); // centralna
 
-    if (row > 0) targets.push_back(index - cols); // gore
-    if (row < rows - 1) targets.push_back(index + cols); // dole
-    if (col > 0) targets.push_back(index - 1); // levo
-    if (col < cols - 1) targets.push_back(index + 1); // desno
 
-    std::cout << "  [JELEPENO] AoE from tile " << index << " -> targets:";
-    for (int t : targets) std::cout << " " << t;
-    std::cout << "\n";
 
-    for (int t : targets) {
-        if (!board.isValidIndex(t)) continue;
-        auto target = board.getCardAt(t);
-        if (target) {
-            std::cout << "    Hits CARD at tile " << t
-                      << " | HP before=" << target->getHP() << "\n";
-            target->setHP(target->getHP() - attacker->getDamage());
-            std::cout << "    Target HP after=" << target->getHP() << "\n";
-        } else {
-            std::cout << "    No card at tile " << t << " -> hits PLAYER\n";
-            board.damagePlayer(attacker->getOwner(), attacker->getDamage());
+void AttackSystem::attackSniper(Board& board, int row, int col)
+{
+    Tile& origin = board.getTile(row, col);
+    auto attackerPtr = origin.getAttackTarget();
+    if (!attackerPtr)
+        return;
+
+    Card& sniper = *attackerPtr;
+    Owner me = sniper.getOwner();
+
+    bool rapid = hasModifier(sniper.getModifiers(), AttackModifier::Rapid);
+    int hits = rapid ? sniper.getHitCount() : 1;
+
+    const std::string& name = sniper.getName();
+
+    std::cout << "[SNIPER] " << name
+              << " at (" << row << "," << col << ") hits=" << hits << "\n";
+
+
+    // =========================
+    // NIKOLICA – najbliža MUŠKA
+    // =========================
+    if (name == "Nikolica Prikolica")
+    {
+        for (int i = 0; i < hits; i++)
+        {
+            auto targets = collectSniperTargets(board, me, row, col);
+
+            if (targets.empty())
+            {
+                std::cout << "   no valid targets\n";
+                return;
+            }
+
+            std::vector<SniperTarget> maleTargets;
+            for (auto& t : targets)
+                if (t.card->getPol())
+                    maleTargets.push_back(t);
+
+            if (maleTargets.empty())
+            {
+                std::cout << "   no male targets\n";
+                return;
+            }
+
+            auto best = std::min_element(
+                maleTargets.begin(),
+                maleTargets.end(),
+                [](const SniperTarget& a, const SniperTarget& b) {
+                    return a.dist < b.dist;
+                }
+            );
+
+            dealDamageToCard(board, sniper, best->card);
+            board.cleanupDeadCards();
         }
+        board.cleanupDeadCards();
+        return;
     }
 
-    // karta se odmah uklanja sa boarda
-    board.removeCardAt(index);
-    std::cout << "  Jelepeno card at tile " << index << " removed after AoE\n";
-}*/
+    // =========================
+    // PHESIC – svi MUŠKI
+    // =========================
+    if (name == "Phesic Nina")
+    {
+        for (int i = 0; i < hits; i++)
+        {
+            auto targets = collectSniperTargets(board, me, row, col);
+
+            if (targets.empty())
+            {
+                std::cout << "   no valid targets\n";
+                return;
+            }
+
+            std::vector<SniperTarget> maleTargets;
+            for (auto& t : targets)
+                if (t.card->getPol())
+                    maleTargets.push_back(t);
+
+            if (maleTargets.empty())
+            {
+                std::cout << "   no male targets\n";
+                return;
+            }
+
+            for (auto& t : maleTargets)
+                dealDamageToCard(board, sniper, t.card);
+            board.cleanupDeadCards();
+        }
+
+        board.cleanupDeadCards();
+        return;
+    }
+
+    std::cout << "⚠ Unknown Sniper\n";
+}
+
+
+
+
+
+
+
+
+
+
+void AttackSystem::attackPump(Board& board, int row, int col)
+{
+    Tile& origin = board.getTile(row, col);
+    auto pumpPtr = origin.getAttackTarget();
+    if (!pumpPtr)
+        return;
+
+    Card& pump = *pumpPtr;
+    Owner me = pump.getOwner();
+
+    Player& myPlayer =
+        (me == Owner::Player1 ? board.getPlayer1() : board.getPlayer2());
+
+    Player& enemyPlayer =
+        (me == Owner::Player1 ? board.getPlayer2() : board.getPlayer1());
+
+    const std::string& name = pump.getName();
+
+    std::cout << "[PUMP] " << name
+              << " at (" << row << "," << col << ")\n";
+
+    // =====================================
+    // KONSTANTIN DAJAMOND → +1
+    // =====================================
+    if (name == "Konstantin Dajamond")
+    {
+        myPlayer.addElixir(1);
+        std::cout << "   +1 elixir\n";
+        return;
+    }
+
+    // =====================================
+    // NIKOCADO AVOCADO → +1 (posebna logika kasnije)
+    // =====================================
+    if (name == "Nikocado Avocado")
+    {
+        myPlayer.addElixir(1);
+        std::cout << "   +1 elixir (Nikocado)\n";
+        return;
+    }
+
+    // =====================================
+    // SLANINA → ukradi 1
+    // =====================================
+    if (name == "Slanina")
+    {
+        enemyPlayer.setElixir(enemyPlayer.getElixir() - 1); // moze u minus
+        myPlayer.addElixir(1);
+
+        std::cout << "   stole 1 elixir from enemy, current elixir:" << myPlayer.getElixir() << std::endl;
+        return;
+    }
+
+    // =====================================
+    // CHAPIKA → zavisi od age
+    // =====================================
+    if (name == "Chapika")
+    {
+        int age = pump.getAge();
+        int gain = 0;
+
+        if (age == 0) gain = 1;
+        else if (age == 1) gain = 2;
+        else if (age == 2) gain = 3;
+        else if (age == 4) gain = 5;
+
+        if (gain > 0)
+        {
+            myPlayer.addElixir(gain);
+            std::cout << "   age=" << age << " → +" << gain << " elixir\n";
+        }
+        else
+        {
+            std::cout << "   age=" << age << " → no elixir\n";
+        }
+
+        return;
+    }
+
+
+    // =====================================
+    // KRISTINA RINGLO → conditional pump
+    // =====================================
+    if (name == "Kristina Ringlo")
+    {
+        int maxHp = pump.getMaxHp();
+        int hp = pump.getHP();
+
+        if (hp < maxHp)
+        {
+            myPlayer.addElixir(2);
+            pump.setHP(hp - 1);
+
+            std::cout << "   damaged → +2 elixir, self -1 HP\n";
+        }
+        else
+        {
+            myPlayer.addElixir(1);
+            std::cout << "   full HP → +1 elixir\n";
+        }
+        return;
+    }
+
+
+    std::cout << "⚠ Unknown Pump card\n";
+}

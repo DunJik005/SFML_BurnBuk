@@ -20,7 +20,7 @@ bool GameController::handleDeckClick(Hand& hand, float windowWidth, float window
 void GameController::sendHandCardToGraveyard(Hand &hand, Graveyard &graveyard, std::shared_ptr<CardHand> &card, float windowWidth) {
     if (!card) return;
     graveyard.addCard(card);
-    hand.removeHand(card, windowWidth);
+    hand.removeHand(card);
 
     if (getCurrentPlayer() == Owner::Player1) {
         player1.addElixir();

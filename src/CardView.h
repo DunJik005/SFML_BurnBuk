@@ -15,7 +15,6 @@ private:
 
     float margin = 20.f;
     float scaleFactor = 1.f;
-    //float starsScaleFactor = 0.22f;
     sf::Vector2f panelPos{0.f, 0.f};
 
     // static sf::Texture& getStarTexture();

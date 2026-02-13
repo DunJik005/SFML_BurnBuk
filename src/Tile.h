@@ -32,6 +32,7 @@ public:
 
     sf::Vector2f getPosition() const;
     sf::Vector2f getSize() const;
+    sf::Font& getFont();
 
 
     bool isActive() const;
@@ -45,6 +46,12 @@ public:
         placedThisTurnCount = n;
     }
 
+    const std::list<std::shared_ptr<Card>>& getAllCards() const;
+
+
+    std::shared_ptr<Card> getFirstEnemyCard(Owner owner) const;
+
+
     std::shared_ptr<Card> removeTopCard();
     std::shared_ptr<Card> returnTopCardToHand();
     std::shared_ptr<Card> topCard() const;
@@ -56,6 +63,7 @@ public:
     // ---------- Combat helpers ----------
     bool hasLeech() const;
     void cleanupDeadCards();
+    void updateStatsValue();
 
     // ---------- Visual ----------
 
@@ -65,6 +73,8 @@ public:
 
     void setPosition(float x, float y);
     void setSize(float w, float h);
+    void setFont(sf::Font& f);
+
     sf::FloatRect getBounds() const;
 
     void draw(sf::RenderWindow& window);
@@ -85,6 +95,9 @@ private:
 
     // ---------- Visual ----------
     sf::RectangleShape shape;
+    sf::RectangleShape statsBar;
+    sf::Text statsText;
+    sf::Font* font = nullptr;
 
     bool hovered = false;
 

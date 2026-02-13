@@ -1,4 +1,5 @@
 #include "InteractionController.h"
+#include "MusicManager.h"
 #include <iostream>
 
 void InteractionController::handleLeftClick(
@@ -83,20 +84,11 @@ void InteractionController::handleLeftClick(
     }
 
     // === KLIK NA TILE ===
+    // === KLIK NA TILE ===
     auto [row, col] = board.getTileAtPosition(mouseX, mouseY);
     if (row != -1)
     {
-        // Klik na postojeću kartu na boardu
-        if (auto target = board.getTile(row, col).getAttackTarget())
-        {
-            selectedBoardCard = target;
-            selectedRow = row;
-            selectedCol = col;
-            selectedHandCard = nullptr;
-            return;
-        }
-
-        // === POSTAVLJANJE KARTE IZ HANDA ===
+        // 1️⃣ AKO DRŽIŠ HAND KARTU → POKUŠAJ POSTAVLJANJE
         if (selectedHandCard)
         {
             Player& currentPlayer =
@@ -113,16 +105,29 @@ void InteractionController::handleLeftClick(
             bool ok = board.placeCard(row, col, selectedHandCard);
             if (ok)
             {
-                activeHand.removeHand(selectedHandCard, windowWidth);
-                clearSelection(); // ✅ selekcija se briše TEK NAKON uspešne akcije
+                MusicManager::instance().playCardSound(*selectedHandCard);
+                activeHand.removeHand(selectedHandCard);
+                clearSelection();
             }
             else
             {
                 currentPlayer.addElixir(cost);
+                // ❗ ovde NE brišeš selekciju
             }
             return;
         }
+
+        // 2️⃣ TEK AKO NEMA HAND KARTE → SELEKCIJA BOARD KARTE
+        if (auto target = board.getTile(row, col).getAttackTarget())
+        {
+            selectedBoardCard = target;
+            selectedRow = row;
+            selectedCol = col;
+            selectedHandCard = nullptr;
+            return;
+        }
     }
+
 
     // === KLIK NA PRAZNO → reset selekcije ===
     clearSelection();

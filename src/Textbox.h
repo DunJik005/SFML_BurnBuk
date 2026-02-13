@@ -8,11 +8,13 @@
 
 class Textbox {
 public:
+
     Textbox(const sf::Font& font);
 
     void setCharacterSize(unsigned int size);
     void setBoxWidth(float w);
     void setVisibleLines(int lines);
+    void setLineSpacing(float factor);
     void setPosition(sf::Vector2f pos);
 
     void setText(const std::string& text);
@@ -32,7 +34,8 @@ private:
     float boxWidth = 0.f;
     float lineHeight = 0.f;
 
-    int visibleLines = 5;
+    int visibleLines;
+    float lineSpacingFactor = 0.75f;
 
     float scrollPos = 0.f;
     float targetScroll = 0.f;

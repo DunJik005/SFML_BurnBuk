@@ -1,89 +1,83 @@
 #include "Hand.h"
-
 // ---------------- INIT ----------------
-
-void Hand::onResize(float windowWidth, float windowHeight) {
-    if (cards.empty()) return;
-
-
-    /* OVDE CE DA SE MENJA BASEY PO ACTIVEU */
-    float margin = windowHeight / 8.f;
-
-    if (isActive)
-        baseY = windowHeight - margin;
-    else
-        baseY = margin;
-
-
-    spacing = windowWidth * 0.15f;
-
-    float totalWidth = (cards.size() - 1) * spacing;
-
-    float startX = (windowWidth - totalWidth) / 2.f;
-
-    for (size_t i = 0; i < cards.size(); i++) {
-        cards[i]->handIndex = static_cast<int>(i);
-        cards[i]->setSpritePosition(startX + i * spacing, baseY);
-    }
-}
-
-// ---------------- LAYOUT ----------------
-
-void Hand::recalcLayout(float windowWidth)
+void Hand::onResize(float windowWidth, float windowHeight)
 {
+    lastWindowWidth = windowWidth;
+    lastWindowHeight = windowHeight;
+
+    centerX = windowWidth * 0.5f;
+    zoneHeight = windowHeight * 3.f / 10.f;
+
     if (cards.empty()) return;
 
-    float totalWidth = (cards.size() - 1) * spacing;
-    float startX = (windowWidth - totalWidth) / 2.f;
+    // skala se računa iz visine zone
+    float cardTexH = cards[0]->getSprite().getLocalBounds().size.y;
 
-    for (size_t i = 0; i < cards.size(); i++)
+    // želimo da se vidi ~50% karte
+    float desiredVisible = zoneHeight * 0.9f;
+    cardScale = desiredVisible / (cardTexH * 0.5f);
+
+    for (auto& c : cards)
+        c->getSprite().setScale({cardScale, cardScale});
+
+    float cardW = cards[0]->getSprite().getGlobalBounds().size.x;
+    float cardH = cards[0]->getSprite().getGlobalBounds().size.y;
+
+    float spacingX = cardW * overlapRatio;
+    float totalW = cardW + (cards.size() - 1) * spacingX;
+    float startX = centerX - totalW * 0.5f;
+
+    // Y pozicija zavisi od toga da li je hand aktivan
+    if (isActive)
     {
-        cards[i]->handIndex = static_cast<int>(i);
-        cards[i]->setSpritePosition(
-            startX + i * spacing,
-            baseY
-        );
-        std::cout << "Card " << i << " pozicija: " << startX + i*spacing << ", " << baseY << "\n";
+        // donja – centar karte malo iznad dna zone
+        baseY = windowHeight - zoneHeight * 0.5f;
+    }
+    else
+    {
+        // gornja
+        baseY = zoneHeight * 0.5f - cardH * 0.5f;
+    }
+
+    for (size_t i = 0; i < cards.size(); ++i)
+    {
+        cards[i]->setHandIndex((int)i);
+        cards[i]->getSprite().setPosition( { startX + i * spacingX, baseY });
+        std::cout << "Card " << i << " pozicija: " << startX + i*spacingX << ", " << baseY << "\n";
 
     }
 }
 
-// ---------------- INPUT ----------------
+// ---------------- Handle Click ----------------
 
 std::shared_ptr<CardHand> Hand::handleClick(float x, float y)
 {
+    if (!isActive) return nullptr;
+
     for (int i = (int)cards.size() - 1; i >= 0; i--)
     {
         if (!cards[i]) continue;
         if (cards[i]->getOwner() != visibleOwner) continue;
 
-        if (cards[i]->containsPoint(x, y))
+        if (cards[i]->containsPoint(x, y)) {
+            std::cout << "Pozicija klika:" << x << ", " << y << ", Selectovana karta " << i <<"\n";
             return cards[i];
+        }
     }
     return nullptr;
 }
 
-// ---------------- MODIFY ----------------
+// ---------------- Modify ----------------
 
-void Hand::addCard(const std::shared_ptr<CardHand>& card,
-                   float windowWidth,
-                   float windowHeight)
+void Hand::addCard(const std::shared_ptr<CardHand>& card, float windowWidth, float windowHeight)
 {
-    // 1. SCALE – POSLE TEKSTURE
-    card->updateScale(windowWidth);
 
-    // 2. dodaj u hand
+    card->getSprite().setScale({cardScale, cardScale});
     cards.push_back(card);
-
-    // 3. ispravan baseY
-    baseY = windowHeight - windowHeight / 8.f;
-
-    // 4. layout
-    recalcLayout(windowWidth);
+    onResize(windowWidth ,windowHeight);
 }
 
-
-void Hand::removeHand(const std::shared_ptr<CardHand>& card, float windowWidth)
+void Hand::removeHand(const std::shared_ptr<CardHand>& card)
 {
     for (auto it = cards.begin(); it != cards.end(); ++it)
     {
@@ -93,50 +87,46 @@ void Hand::removeHand(const std::shared_ptr<CardHand>& card, float windowWidth)
             break;
         }
     }
-    recalcLayout(windowWidth);
+    onResize(lastWindowWidth, lastWindowHeight);
 }
 
-// ---------------- RENDER ----------------
+// ---------- Active Hand ----------
+void Hand::setActive(bool active)
+{
+    if (isActive == active) return;
 
-void Hand::draw(sf::RenderWindow& window,
-                const std::shared_ptr<CardHand>& selected)
+    isActive = active;
+
+    // odmah prerasporedi karte
+    onResize(lastWindowWidth, lastWindowHeight);
+}
+
+// ---------------- Draw ----------------
+void Hand::draw(sf::RenderWindow& window, const std::shared_ptr<CardHand>& selected)
 {
     for (auto& c : cards)
     {
         if (!c)
             continue;
-
-        c->resetVisuals();
-
-        //HAND DRUGI NAOPAK
-        if (!isActive) {
-            c->getSprite().setTexture(CardHand::getCardBackTexture(), true);
-            c->getSprite().setRotation(sf::degrees(180.f));
-            c->draw(window);
-            continue;
-        }
-
-        // AKTIVAN HAND → VRATI FRONT
-        if (const sf::Texture* front = c->getTexture()) {
-            c->getSprite().setTexture(*front, true);
-        }
-
-        c->getSprite().setRotation(sf::degrees(0.f));
-
+        if (!isActive)
+            c->getCardRenderer().setRenderMode(RenderMode::Back);
+        else
+            c->getCardRenderer().setRenderMode(RenderMode::Front);
 
         float y = baseY;
 
         if (c == selected)
         {
-            y -= baseY / 10.f;
+            y -= cards[0]->getHeight() * 0.1f; // karta “izađe” gore
             c->setBrightness(true);
         }
-        else if (selected)
+        else
         {
             c->setBrightness(false);
         }
 
         c->setSpritePosition(c->getSprite().getPosition().x, y);
+
         c->draw(window);
     }
 }

@@ -12,7 +12,7 @@ Card::Card(std::string name, sf::Texture& tex, int hp, int dmg, int cost,
            AttackModifier mods,
            int hits,
            const std::string& description,
-           PlacementType placement)
+           PlacementType placement, bool musko, bool gay, bool immune, std::string sound)
     : sprite(getNeutralTexture()),
       rarityFrameSprite(getNeutralTexture()),
       placementType(placement)
@@ -27,6 +27,12 @@ Card::Card(std::string name, sf::Texture& tex, int hp, int dmg, int cost,
     this->description = description;
     this->faceUp = true;
     this->hitCount = hits;
+    setPol(musko);
+    setGay(gay);
+    setMaxHp(hp);
+    setImmune(immune);
+    setSoundPath(sound);
+
 
     if (baseAttack == BaseAttack::Jelepeno) {
         ignoresTileRules = true;
@@ -66,9 +72,23 @@ sf::Texture& Card::getRarityFrame(Rarity r)
     return cache[r];
 }
 
+sf::IntRect Card::getArtRect() const {
+    return sf::IntRect({ 145,   // x
+    345},    // y
+    {1110,   // width
+    1110});// height
+}
 
+void Card::applyVisualMode() {
+    if (!texture) return;
 
+    sprite.setTexture(*texture, true);
+    // uzimamo samo artwork
+    sprite.setTextureRect(getArtRect());
 
+    // reset transformacija
+    sprite.setScale({1.f, 1.f});
+}
 
 
 
