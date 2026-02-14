@@ -28,27 +28,7 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a0e171d6-0e19-4603-bda0-96475b14e093" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/BurnBookDunJic copy - Copy.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/data_source_mapping.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/PlayerView.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/PlayerView.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/BurnBookDunJic.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/burnbookalfa.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/sfmlproject.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Card.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/Card.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MusicManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/MusicManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/MusicManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/src/MusicManager.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
-    </list>
+    <list default="true" id="a0e171d6-0e19-4603-bda0-96475b14e093" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -124,7 +104,7 @@
       <workItem from="1770944469411" duration="13278000" />
       <workItem from="1771026743699" duration="104000" />
       <workItem from="1771026898357" duration="608000" />
-      <workItem from="1771027546314" duration="2928000" />
+      <workItem from="1771027546314" duration="3676000" />
     </task>
     <servers />
   </component>
