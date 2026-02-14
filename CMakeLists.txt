@@ -63,6 +63,8 @@ add_executable(sfmlproject
         src/ReturnButton.h
         src/MusicManager.cpp
         src/MusicManager.h
+        src/PlayerView.cpp
+        src/PlayerView.h
 )
 
 # Koristi statičke SFML biblioteke

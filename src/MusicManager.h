@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <memory>
 #include "Card.h"
 
 class MusicManager {
@@ -25,24 +26,17 @@ public:
     void setBackgroundVolume(float volume);
 
 private:
-
     float bgVolume = 100.f; // početna jačina background muzike
-
-
     MusicManager();
-
-#include <memory>
 
     sf::Music background;        // može default konstruktor
     sf::SoundBuffer soundBuffer; // može default konstruktor
     sf::Sound sound;             // OK, može default konstruktor jer ćemo mu setBuffer kasnije
 
-
     std::vector<std::string> bgTracks;
     int currentTrack = 0;
 
     std::map<BaseAttack, std::string> baseAttackToSound;
-
     void nextTrack();
 };
 

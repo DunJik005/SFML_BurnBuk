@@ -31,6 +31,9 @@ MusicManager::MusicManager() : sound(soundBuffer)
 }
 
 
+
+
+
 void MusicManager::setBackgroundVolume(float volume) {
     bgVolume = volume;
     background.setVolume(bgVolume);
@@ -45,7 +48,8 @@ void MusicManager::loadBackgroundPlaylist(const string& folder) {
 }
 
 void MusicManager::playBackground() {
-    if (bgTracks.empty()) return;
+    if (bgTracks.empty())
+        return;
     if (!background.openFromFile(bgTracks[currentTrack])) {
         cout << "Ne mogu da otvorim: " << bgTracks[currentTrack] << endl;
         return;
@@ -54,8 +58,11 @@ void MusicManager::playBackground() {
     background.play();
 }
 
+
+
 void MusicManager::nextTrack() {
-    if (bgTracks.empty()) return;
+    if (bgTracks.empty())
+        return;
     currentTrack = (currentTrack + 1) % bgTracks.size();
     if (!background.openFromFile(bgTracks[currentTrack])) {
         cout << "Ne mogu da otvorim: " << bgTracks[currentTrack] << endl;
@@ -65,10 +72,15 @@ void MusicManager::nextTrack() {
     background.play();
 }
 
+
+
 void MusicManager::update() {
     if (background.getStatus() == sf::SoundSource::Status::Stopped)
         nextTrack();
 }
+
+
+
 
 void MusicManager::playCardSound(const Card& card) {
     string path;

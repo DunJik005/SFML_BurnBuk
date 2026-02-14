@@ -32,17 +32,20 @@ enum class AttackType { Chomper, Peashooter, Catapult, Special, Jelepeno, Nut, T
 
 // dodatak za mergovanje razlicitih keywordova na base napade
 enum class BaseAttack {
-    Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica, Hemisfera, Sniper, Pump
+    Chomper, Peashooter, Catapult, Nut, Jelepeno, Pijavica, Hemisfera, Sniper, Pump, Support
 };
 
 enum class AttackModifier : uint32_t {
-    None    = 0,
-    Laser   = 1 << 0,
-    Rapid   = 1 << 1,
-    Zlatni  = 1 << 2,
-    Reverse = 1 << 3,
-    Wide    = 1 << 4,
-    Tall    = 1 << 5
+    None        = 0,
+    Laser       = 1 << 0,
+    Rapid       = 1 << 1,
+    Zlatni      = 1 << 2,
+    Reverse     = 1 << 3,
+    Wide        = 1 << 4,
+    Tall        = 1 << 5,
+    Global      = 1 << 6,
+    Infiltrator = 1 << 7,
+    Parasite    = 1 << 8,
 };
 
 

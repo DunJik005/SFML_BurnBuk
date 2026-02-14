@@ -1,4 +1,6 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+
 #include "Board.h"
 #include "Card.h"
 #include "CardHand.h"
@@ -12,225 +14,102 @@
 #include "InteractionController.h"
 #include "CardDataBase.h"
 #include "MusicManager.h"
-#include <iostream>
-#include <SFML/Audio.hpp>
-using namespace sf;
+#include "PlayerView.h"
+
+#include <ctime>
+#include <cstdlib>
 
 int main() {
-    sf::Clock clock; //meri vreme za skrol
-
+    sf::Clock clock;
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
+    // Muzika
+    MusicManager::instance().loadBackgroundPlaylist("assets/music/background");
+    MusicManager::instance().playBackground();
 
+    // Prozori
+    sf::RenderWindow window1(sf::VideoMode({1200, 800}), "Player 1");
+    sf::RenderWindow window2(sf::VideoMode({1200, 800}), "Player 2");
+    window1.setFramerateLimit(60);
+    window2.setFramerateLimit(60);
 
-
-    sf::Music music;
-    if (!music.openFromFile("assets/music/desinger.ogg")) {
-        std::cout << "Muzika nije ucitana."<< std::endl;
-    }
-    music.play();
-    music.setLooping(true);
-
-
-
-    /*MusicManager::instance().loadBackgroundPlaylist("assets/music/background");
-    MusicManager::instance().playBackground();*/
-
-
-
-
-    RenderWindow window(
-        //VideoMode({1820,1080}),
-        VideoMode({1200, 800}),
-        "Tedzan uci",
-        sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize
-    );
-// da graficka ne radi na 3000fpsa
-    window.setFramerateLimit(60);
-
+    // Baza i deck
     CardDataBase cardDB;
-
     Deck gameDeck(cardDB);
 
-    Deck* activeDeck = nullptr;
-
-
+    // Igrači
     Player player1;
     Player player2;
 
+    // Board i dugmad
+    Board board(1200, 800, player1, player2);
+    TurnButtons turnButtons(1200, 800);
 
-    // pravi se board
-    Board board(window.getSize().x, window.getSize().y, player1, player2);
-
-    TurnButtons turnButtons(window.getSize().x, window.getSize().y);
-
+    // Game controller
     GameController gameController(board, turnButtons, gameDeck, player1, player2);
-
     gameDeck.setPosition(board, -80.f);
 
+    // Ruke
+    Hand p1Hand, p2Hand;
+    p1Hand.onResize(1200, 800);
+    p2Hand.onResize(1200, 800);
 
-    // pravi se hand objekat
-    Hand p1Hand;
-    Hand p2Hand;
-    p1Hand.onResize(window.getSize().x, window.getSize().y);
-    p2Hand.onResize(window.getSize().x, window.getSize().y);
-
-    std::shared_ptr<CardHand> selectedCard = nullptr;
-
-    //pravi se graveyard instanca i selected board karta za graveyard (na foru selectedCarda za hand)
+    // Graveyard
     Graveyard graveyard;
     graveyard.setPosition(board, 80);
-    std::shared_ptr<Card> selectedBoardCard = nullptr;
 
-
-// pravi se card view instanca
+    // CardView
     CardView cardView;
-    cardView.onResize(window.getSize().x, window.getSize().y);
+    cardView.onResize(1200, 800);
 
-
+    // Interaction
     InteractionController interaction;
 
-    while (window.isOpen())
-    {
-        // ===============================
-        // 1️⃣ UPDATE HAND STATE (GC)
-        // ===============================
-        gameController.updateHandsState(p1Hand, p2Hand);
+    // === PLAYER VIEW-ovi ===
+    PlayerView view1(
+        window1, Owner::Player1,
+        board, p1Hand, p2Hand,
+        gameDeck, graveyard,
+        turnButtons, gameController,
+        interaction, cardView,
+        player1, player2
+    );
 
+    PlayerView view2(
+        window2, Owner::Player2,
+        board, p2Hand, p1Hand,
+        gameDeck, graveyard,
+        turnButtons, gameController,
+        interaction, cardView,
+        player1, player2
+    );
 
-        MusicManager::instance().update(); // update muzike
-
-        Hand* activeHand =
-            (gameController.getCurrentPlayer() == Owner::Player1)
-            ? &p1Hand : &p2Hand;
-
-        Hand* inactiveHand =
-            (activeHand == &p1Hand) ? &p2Hand : &p1Hand;
-
-        // ===============================
-        // 2️⃣ EVENT LOOP
-        // ===============================
-        while (auto event = window.pollEvent())
-        {
-            // --- CLOSE ---
-            if (event->is<sf::Event::Closed>())
-                window.close();
-
-            // --- SCROLL (CardView) ---
-            if (event->is<sf::Event::MouseWheelScrolled>())
-            {
-                auto* e = event->getIf<sf::Event::MouseWheelScrolled>();
-                if (e->wheel == sf::Mouse::Wheel::Vertical)
-                    cardView.scrollDescription(e->delta);
-            }
-
-            // --- RESIZE ---
-            if (event->is<sf::Event::Resized>())
-            {
-                auto* e = event->getIf<sf::Event::Resized>();
-
-                board.onResize(e->size.x, e->size.y);
-                turnButtons.onResize(e->size.x, e->size.y);
-
-                gameDeck.setPosition(board, -80.f); // ✅ DODAJ OVO
-                graveyard.setPosition(board, +80.f); // ispod sredine
-
-                p1Hand.onResize(e->size.x, e->size.y);
-                p2Hand.onResize(e->size.x, e->size.y);
-
-                cardView.onResize(e->size.x, e->size.y);
-
-                sf::View view(sf::FloatRect(
-                    {0.f, 0.f},
-                    {static_cast<float>(e->size.x),
-                    static_cast<float>(e->size.y)}
-                ));
-                window.setView(view);
-            }
-
-            // --- HOVER ---
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-            board.updateHover(mousePos.x, mousePos.y);
-
-            // --- MOUSE BUTTONS ---
-            if (event->is<sf::Event::MouseButtonPressed>())
-            {
-                auto* e = event->getIf<sf::Event::MouseButtonPressed>();
-                cardView.hide();
-
-                // LEFT CLICK
-                if (e->button == sf::Mouse::Button::Left)
-                {
-                    // Turn buttons (ostaje isto)
-                    Owner current = gameController.getCurrentPlayer();
-
-                    if (current == Owner::Player1 &&
-                        turnButtons.handleClick(e->position.x, e->position.y, true))
-                    {
-                        gameController.setPlayer1Done(true);
-                        gameController.update();
-                        continue;
-                    }
-
-                    if (current == Owner::Player2 &&
-                        turnButtons.handleClick(e->position.x, e->position.y, false))
-                    {
-                        gameController.setPlayer2Done(true);
-                        gameController.update();
-                        continue;
-                    }
-
-                    interaction.handleLeftClick(
-                    e->position.x,
-                    e->position.y,
-                    board,
-                    gameDeck,
-                    *activeHand,
-                    gameController,
-                    graveyard,
-                    player1,
-                    player2,
-                    window.getSize().x,
-                    window.getSize().y
-                );
-
-                }
-
-                // RIGHT CLICK
-                if (e->button == sf::Mouse::Button::Right)
-                {
-                    interaction.handleRightClick(cardView);
-                }
-            }
-        }
-
-        // ===============================
-        // 3️⃣ UPDATE
-        // ===============================
+    // === LOOP ===
+    while (window1.isOpen() && window2.isOpen()) {
         float dt = clock.restart().asSeconds();
-        cardView.update(dt);
 
-        // ===============================
-        // 4️⃣ DRAW
-        // ===============================
-        window.clear(sf::Color::White);
+        gameController.updateHandsState(p1Hand, p2Hand);
+        MusicManager::instance().update();
 
-        board.draw(
-            window,
-            interaction.getSelectedBoardCard(),
-            gameController.getCurrentPlayer()
-        );
-        inactiveHand->draw(window, nullptr);
-        activeHand->draw(window, interaction.getSelectedHandCard());
+        // EVENTI
+        while (auto e = window1.pollEvent())
+            view1.handleEvent(*e);
 
+        while (auto e = window2.pollEvent())
+            view2.handleEvent(*e);
 
-        gameDeck.draw(window);
-        graveyard.draw(window);
-        cardView.draw(window);
-        turnButtons.draw(window);
+        // UPDATE
+        view1.update(dt);
+        view2.update(dt);
 
-        window.display();
+        // DRAW
+        window1.clear(sf::Color::White);
+        view1.draw();
+        window1.display();
+
+        window2.clear(sf::Color::White);
+        view2.draw();
+        window2.display();
     }
-
     return 0;
 }
