@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/BurnBookDunJic copy - Copy.iml" filepath="$PROJECT_DIR$/.idea/BurnBookDunJic copy - Copy.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/burnbookalfa.iml" filepath="$PROJECT_DIR$/.idea/burnbookalfa.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/sfmlproject.iml" filepath="$PROJECT_DIR$/.idea/sfmlproject.iml" />
     </modules>
   </component>
 </project>
